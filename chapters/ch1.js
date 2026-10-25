@@ -1,0 +1,61 @@
+// Chapter 1 — 끝없는 복도. Pure data: the engine builds everything from this.
+export default {
+  id: 'ch1', order: 1, strangeness: .08, title: '끝없는 복도', subtitle: '첫 번째 꿈', art: 'ch1', music: 'ch1',
+  intro: ['눈을 떴다. 아니, 아직 꿈속이다.', '몸은 어른인데, 마음은 길 잃은 아이처럼 집을 찾고 있다.'],
+  palette: { skyTop: '#a9c8ff', skyMid: '#ffe6f2', skyBottom: '#fff3d6', fog: '#f6e8e4', fogNear: 4, fogFar: 38, hemi: 1.0, sun: '#fff0d8', sunI: .7, ground: '#f0dcc0', ambient: '#fff0f4', ambientI: 1.6 },
+  spawn: { x: 0, z: 2, yaw: Math.PI },
+  spawns: { side: { x: -16, z: 18, yaw: -Math.PI / 2 }, hall: { x: 0, z: 70, yaw: 0 } },
+  bounds: [-30, -5, 30, 90],
+  next: 'ch2',
+  objects: [
+    { type: 'corridor', x: 0, z: 0, len: 60, dir: 'z', width: 3.4, height: 3, capStart: true, lights: true, lampEvery: 5, wallColor: '#fff6ee', lampColor: '#fff4fa', gaps: [{ at: 18, side: 'l', w: 3.4 }, { at: 30, side: 'r', w: 3 }, { at: 48, side: 'r', w: 2 }] },
+    // HIDDEN ROOM: a fake wall (looks solid, you can walk through it)
+    { type: 'box', x: 1.8, z: 48, w: .2, d: 2, h: 3, tex: 'wallpaper', color: '#fff6ee', solid: false },
+    { type: 'room', x: 4.3, z: 48, w: 5, d: 4, height: 2.4, floor: 'wood', wallColor: '#ffe8f0', ceilColor: '#ffe0ec', gaps: [{ wall: 'w', at: 0, w: 2 }] },
+    { type: 'blocks', x: 5.5, z: 47, n: 4 },
+    { type: 'orb', x: 5.8, z: 49, y: 1.1, color: '#ffe0b0', r: 1, room: 'ch1_closet', text: '기억의 조각 · 벽장 속 크레용 그림. 삐뚤빼뚤한 글씨로 "우리 집". 그때 내 손은 이렇게 작았다.' },
+    { type: 'text', x: 0, z: 8, r: 2, text: '이 복도… 초등학교 복도 같다. 이렇게 낮았던가.', mood: [1, 0] },
+    { type: 'heightmarks', x: 1.68, z: 14, rot: -Math.PI / 2, r: 1.3, text: '벽에 키 재기 눈금이 남아 있다. 맨 위 눈금이 지금 내 허리께에 닿는다.', mood: [2, 0] },
+    { type: 'cloud', x: 0, y: 2.4, z: 12, s: .5, puffs: 4 },
+    // JUMP: a fallen bookshelf blocks the hallway — hop over it
+    { type: 'box', x: 0, z: 38, w: 3.4, h: .75, d: .5, tex: 'wood', color: '#f4dcc8' },
+    { type: 'text', x: 0, z: 35, r: 1.6, text: '책장이 쓰러져 있다. 넘어갈 수 있을 것 같다.', mood: [1, 0] },
+    { type: 'cloud', x: .5, y: 2.5, z: 26, s: .45, puffs: 3 },
+    { type: 'cloud', x: -.4, y: 2.3, z: 44, s: .55, puffs: 5 },
+    // west side corridor — dead end with a tiny door (secret)
+    { type: 'corridor', x: -22, z: 18, len: 20.3, dir: 'x', width: 3.4, height: 3, capStart: true, floor: 'carpet', wallColor: '#f5dcea', lampEvery: 5 },
+    { type: 'door', id: 'tinydoor', x: -21.75, z: 18, rot: Math.PI / 2, scale: .32, r: 1.4, secret: 'tinydoor', link: { to: 'secret' }, text: '너무 작아서 들어갈 수 없는 문… 그런데 몸이 점점 작아진다.' },
+    { type: 'door', x: -12, z: 16.4, rot: 0, r: 1.1, link: { to: 'ch3' }, text: '방문 너머에서 오래된 장난감 냄새가 난다.', mood: [0, 2] },
+    { type: 'blocks', x: -8, z: 19, n: 5 },
+    // east pool room
+    { type: 'room', x: 7.9, z: 30, w: 12.4, d: 10, height: 3.6, floor: 'tiles', wallTex: 'pool', ceilTex: 'pool', gaps: [{ wall: 'w', at: 0, w: 3 }] },
+    { type: 'water', y: .05, size: 9, tex: 'pool', color: '#bff0f6', opacity: .55, x: 8, z: 30 },
+    { type: 'duck', x: 13.2, z: 34, r: .9, secret: 'duck', text: '고무 오리가 조용히 꽥, 하고 말했다. "아직 멀었어."', mood: [1, 1] },
+    { type: 'lamp', x: 8, y: 3.55, z: 30, w: 4, d: .4, light: true, color: '#e8fbff', intensity: 8 },
+    { type: 'orb', x: 6, z: 27, y: 1.4, color: '#c8f8ff' },
+    // great room with open sky and indoor clouds
+    { type: 'room', x: 0, z: 70, w: 26, d: 20, height: 7, ceiling: false, floor: 'carpet', wallColor: '#fff4e8', gaps: [{ wall: 'n', at: 0, w: 3.4 }] },
+    { type: 'cloud', x: -6, y: 4.5, z: 66, s: 1.4, puffs: 6 },
+    { type: 'cloud', x: 7, y: 5.2, z: 72, s: 1.6, puffs: 6 },
+    { type: 'cloud', x: -2, y: 6, z: 78, s: 1.2, puffs: 5 },
+    { type: 'cloud', x: 9, y: 3, z: 63, s: .8, puffs: 4 },
+    { type: 'mailbox', x: -5, z: 72, wander: 4, speed: .5, r: 1, link: { to: 'random' }, text: '우체통이 편지를 한 장 건넨다. "다른 꿈에서 보낸 편지"', mood: [0, 2] },
+    { type: 'stairs', x: 9, z: 76, n: 12, rot: Math.PI, color: '#ffeef6' },
+    { type: 'text', x: 0, z: 63, r: 3, text: '천장이 없다. 하늘이 방 안으로 들어와 있다.', mood: [1, 1] },
+    { type: 'door', id: 'goal1', x: 0, y: 1.2, z: 78, rot: 0, glow: '#ffe8f6', goal: true, r: 1.6, float: true, text: '문이 공중에 떠 있다. 손을 뻗자 닿는다.' },
+    { type: 'lamppost', x: -3, z: 76 }, { type: 'lamppost', x: 3, z: 76 },
+    // JUMP (optional): cloud steps up to a ledge — HIDDEN ROOM
+    { type: 'platform', style: 'cloud', x: 9, y: .7, z: 63.5, w: 1.8, d: 1.8 },
+    { type: 'platform', style: 'cloud', x: 10.5, y: 1.4, z: 66.5, w: 1.8, d: 1.8 },
+    { type: 'platform', style: 'cloud', x: 8.5, y: 2.1, z: 69.2, w: 1.8, d: 1.8, move: { axis: 'x', amp: .8, speed: .5 } },
+    { type: 'platform', style: 'cloud', x: 6, y: 2.8, z: 71.5, w: 1.8, d: 1.8 },
+    { type: 'platform', style: 'wood', x: 2.5, y: 3.4, z: 73, w: 3.4, d: 2.4, h: .3 },
+    { type: 'orb', x: 2.5, z: 73.3, y: 4.6, color: '#fff0d0', r: 1.2, room: 'ch1_cloudledge', text: '기억의 조각 · 구름 위 선반에 오래된 열쇠 하나. 손잡이에 "집"이라고 새겨져 있다. 어른이 되면서 어딘가에 두고 온 열쇠다.' },
+  ],
+  mutations: [
+    { when: { dayMod: [2, 1] }, palette: { fog: '#f7e2ee', skyMid: '#ffd8ec' }, hueDrift: .15, text: '복도의 벽지가 조금 분홍색이 되었다.' },
+    { when: { dayMin: 2 }, add: [{ type: 'sheep', x: 0, z: 40, wander: 1.2, speed: .3, r: 1.1, text: '양 한 마리가 복도를 세고 있다. 하나, 둘…', mood: [2, 1] }] },
+    { when: { dayMin: 4 }, add: [{ type: 'tv', x: 1, z: 52, rot: -Math.PI / 2, r: 1, link: { to: 'ch2' }, text: '텔레비전 속에 바다가 보인다.' }] },
+    { when: { chance: .4 }, add: [{ type: 'fish', x: 0, z: 30, y: 2, wander: 3, speed: .6 }] },
+  ],
+};

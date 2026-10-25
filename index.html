@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Go Home">
+<meta name="theme-color" content="#f6e8f2">
+<title>Go Home</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/img/icon-180.png">
+<link rel="icon" href="assets/img/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="touch"></div>
+<div id="joy"><div></div></div>
+<button id="jumpbtn" aria-label="점프">⤒<small>점프</small></button>
+<button id="soundbtn">🔈 소리 켜기<small>무음 스위치를 꺼 주세요</small></button>
+<div id="hud">
+  <div id="hudtop"><div><div id="day"></div><div id="chapname"></div></div><button id="pausebtn" aria-label="일시정지">☾</button></div>
+  <div id="say"></div>
+  <div id="hint">왼쪽: 걷기 · 오른쪽: 둘러보기 · 버튼: 점프</div>
+</div>
+<div id="toast"></div>
+
+<section id="title" class="screen on">
+  <div id="titlebg"></div><canvas id="particles"></canvas>
+  <div class="titlebox"><h1 id="logo">Go Home</h1><p class="sub">집으로 가는 꿈</p></div>
+  <p id="titlehint">화면을 눌러 꿈속으로</p>
+  <p class="foot">🎧 이어폰을 권장해요</p>
+</section>
+
+<section id="menu" class="screen">
+  <div class="menuwrap">
+    <header><h2>꿈 일기</h2><div id="menuday"></div><div id="secrets"></div></header>
+    <div id="chapters"></div>
+    <button id="menuload" class="wide">기록 · 불러오기 · 백업</button>
+    <details class="opts"><summary>설정</summary>
+      <label><span>레트로 화질 (PS1 모드)</span><input type="checkbox" id="optps1"></label>
+      <label><span>음량</span><input type="range" id="optvol" min="0" max="1" step="0.05"></label>
+      <label><span>시점 감도</span><input type="range" id="optsens" min="0.4" max="2" step="0.1"></label>
+      <button id="optreset">기록 지우기</button>
+    </details>
+  </div>
+</section>
+
+<section id="pause" class="screen dim">
+  <div class="panel"><h2>잠시 멈춤</h2><button id="resume">계속 꿈꾸기</button><button id="savebtn">기록하기</button><button id="wake">깨어나기</button><button id="tomenu" class="ghost">꿈 일기로</button></div>
+</section>
+
+<section id="slots" class="screen dim">
+  <div class="panel wide"><h2 id="slottitle">기록</h2><div id="slotlist"></div>
+    <details class="backup"><summary>백업 (코드 / 파일)</summary>
+      <textarea id="codebox" placeholder="백업 코드를 여기에 붙여넣기"></textarea>
+      <div class="row"><button id="exportbtn">코드 만들기·복사</button><button id="importbtn">코드로 불러오기</button></div>
+      <div class="row"><button id="exportfile">파일로 저장</button><label class="filebtn">파일에서 불러오기<input type="file" id="importfile" accept=".txt,text/plain"></label></div>
+    </details>
+    <button id="slotback" class="ghost">돌아가기</button></div>
+</section>
+
+<section id="mood" class="screen dim">
+  <div class="panel wide"><small>오늘의 꿈</small><h2 id="moodday"></h2><canvas id="moodcv"></canvas><p id="moodscenes"></p><p id="moodend"></p><button id="moodnext">다시 잠들기</button></div>
+</section>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
