@@ -15,7 +15,7 @@ export default {
     { type: 'blocks', x: 5.5, z: 47, n: 4 },
     { type: 'orb', x: 5.8, z: 49, y: 1.1, color: '#ffe0b0', r: 1, room: 'ch1_closet', text: '기억의 조각 · 벽장 속 크레용 그림. 삐뚤빼뚤한 글씨로 "우리 집". 그때 내 손은 이렇게 작았다.' },
     { type: 'text', x: 0, z: 8, r: 2, text: '이 복도… 초등학교 복도 같다. 이렇게 낮았던가.', mood: [1, 0] },
-    { type: 'heightmarks', x: 1.68, z: 14, rot: -Math.PI / 2, r: 1.3, text: '벽에 키 재기 눈금이 남아 있다. 맨 위 눈금이 지금 내 허리께에 닿는다.', mood: [2, 0] },
+    { type: 'heightmarks', x: 1.68, z: 14, rot: -Math.PI / 2, r: 1.3, text: '벽에 키재기 눈금이 남아 있다. 맨 위 눈금이 지금 내 허리께에 닿는다.', mood: [2, 0] },
     { type: 'cloud', x: 0, y: 2.4, z: 12, s: .5, puffs: 4 },
     // JUMP: a fallen bookshelf blocks the hallway — hop over it
     { type: 'box', x: 0, z: 38, w: 3.4, h: .75, d: .5, tex: 'wood', color: '#f4dcc8' },
@@ -30,7 +30,7 @@ export default {
     // east pool room
     { type: 'room', x: 7.9, z: 30, w: 12.4, d: 10, height: 3.6, floor: 'tiles', wallTex: 'pool', ceilTex: 'pool', gaps: [{ wall: 'w', at: 0, w: 3 }] },
     { type: 'water', y: .05, size: 9, tex: 'pool', color: '#bff0f6', opacity: .55, x: 8, z: 30 },
-    { type: 'duck', x: 13.2, z: 34, r: .9, secret: 'duck', text: '고무 오리가 조용히 꽥, 하고 말했다. "아직 멀었어."', mood: [1, 1] },
+    { type: 'duck', x: 13.2, z: 34, r: .9, secret: 'duck', text: '고무 오리가 조용히 "꽥" 하고 말한다. "아직 멀었어."', mood: [1, 1] },
     { type: 'lamp', x: 8, y: 3.55, z: 30, w: 4, d: .4, light: true, color: '#e8fbff', intensity: 8 },
     { type: 'orb', x: 6, z: 27, y: 1.4, color: '#c8f8ff' },
     // great room with open sky and indoor clouds
@@ -54,7 +54,7 @@ export default {
   ],
   mutations: [
     { when: { dayMod: [2, 1] }, palette: { fog: '#f7e2ee', skyMid: '#ffd8ec' }, hueDrift: .15, text: '복도의 벽지가 조금 분홍색이 되었다.' },
-    { when: { dayMin: 2 }, add: [{ type: 'sheep', x: 0, z: 40, wander: 1.2, speed: .3, r: 1.1, text: '양 한 마리가 복도를 세고 있다. 하나, 둘…', mood: [2, 1] }] },
+    { when: { dayMin: 2 }, add: [{ type: 'sheep', x: 0, z: 40, wander: 1.2, speed: .3, r: 1.1, text: '양 한 마리가 복도에서 무언가를 세고 있다. 하나, 둘…', mood: [2, 1] }] },
     { when: { dayMin: 4 }, add: [{ type: 'tv', x: 1, z: 52, rot: -Math.PI / 2, r: 1, link: { to: 'ch2' }, text: '텔레비전 속에 바다가 보인다.' }] },
     { when: { chance: .4 }, add: [{ type: 'fish', x: 0, z: 30, y: 2, wander: 3, speed: .6 }] },
   ],

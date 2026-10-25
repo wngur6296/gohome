@@ -1,12 +1,12 @@
 # Go Home — 집으로 가는 꿈
 
 꿈속을 걸으며 집으로 돌아가는 길을 찾는 몽환적인 탐험 게임 (드림코어 + PS1 감성 · 점프스케어 없음).
-three.js(r160, `vendor/` 에 포함) 기반 모바일 웹 게임. 아이폰 Safari / 홈 화면 앱(PWA) / 단일 HTML 파일로 실행.
+three.js(r160, `vendor/`에 포함) 기반 모바일 웹 게임. 아이폰 Safari / 홈 화면 앱(PWA) / 단일 HTML 파일로 실행.
 
 ## 이야기
 > 마음은 아직 어린아이인데 몸은 다 커 버린 어른이, 꿈속에서 느끼는 감정들.
 
-꿈은 어린 시절의 장소들로 이어진다. 낮아진 복도, 무릎이 땅에 닿는 그네, 발이 들어가지 않는 운동화, 허리께에 남은 키 재기 눈금. 장소는 그대로인데 몸만 커 버려서 어디에도 꼭 맞지 않는다. 챕터가 깊어질수록 꿈은 점점 기묘해지고(어른의 세계에서 느끼는 낯섦), "기억의 조각"들은 집과 돌봄, 그리움을 조금씩 들려준다. 마지막 장 "집"에서 어른인 나와 아이인 나는 함께 현관문을 연다. 무섭지 않고, 따뜻하면서 조금 쓸쓸한 이야기.
+꿈은 어린 시절의 장소들로 이어진다. 낮아진 복도, 무릎이 땅에 닿는 그네, 발이 들어가지 않는 운동화, 허리께에 남은 키재기 눈금. 장소는 그대로인데 몸만 커 버려서 어디에도 꼭 맞지 않는다. 챕터가 깊어질수록 꿈은 점점 기묘해지고(어른의 세계에서 느끼는 낯섦), "기억의 조각"들은 집과 돌봄, 그리움을 조금씩 들려준다. 마지막 장 "집"에서 어른인 나와 아이인 나는 함께 현관문을 연다. 무섭지 않고, 따뜻하면서 조금 쓸쓸한 이야기.
 
 | 장 | 감정 |
 |---|---|
@@ -21,7 +21,7 @@ three.js(r160, `vendor/` 에 포함) 기반 모바일 웹 게임. 아이폰 Safa
 
 ## 실행
 - **단일 파일**: `dist/gohome.html` 하나만 있으면 오프라인으로 실행됩니다 (모든 이미지·음악 내장).
-- **폴더 버전**: 정적 서버로 실행 (`python3 -m http.server` → `index.html`). http(s)로 열면 서비스워커가 오프라인 캐시를 만들고, Safari 공유 → "홈 화면에 추가"로 전체 화면 앱처럼 쓸 수 있습니다.
+- **폴더 버전**: 정적 서버로 실행 (`python3 -m http.server` → `index.html`). http(s)로 열면 서비스 워커가 오프라인 캐시를 만들고, Safari 공유 → "홈 화면에 추가"로 전체 화면 앱처럼 쓸 수 있습니다.
 
 ## 조작
 - 화면 왼쪽 드래그: 가상 조이스틱으로 걷기 (끝까지 밀면 빨리 걷기)
@@ -55,7 +55,7 @@ three.js(r160, `vendor/` 에 포함) 기반 모바일 웹 게임. 아이폰 Safa
 
 ## 숨겨진 방 · 트리거 (데이터 기반)
 오브젝트에 붙이는 속성만으로 만듦:
-- `solid:false` 인 box = 통과 가능한 가짜 벽
+- `solid:false`인 box = 통과 가능한 가짜 벽
 - `type:'zone'` = 보이지 않는 트리거. `still: 초` = 그 자리에 가만히 서 있기
 - `gaze: 초` (+ `gazeY, gazeAngle, gazeDist`) = 오래 바라보기
 - `warp: {x,z,yaw}` = 같은 장면 안 순간이동 (숨겨진 방은 보통 x=150~260 떨어진 곳에 `room`으로 지음)
@@ -100,18 +100,18 @@ js/
 chapters/      ch1~ch8, secret 챕터 데이터 + manifest.js
 js/strange.js  기괴함 레이어 / 한글 글리치 / 속삭임
 assets/        생성한 이미지·아이콘·오디오(m4a/AAC)
-tools/         make_audio.py(음악 합성), build_single.mjs(단일 HTML 빌드), test.mjs / test_jump.mjs(헤드리스 테스트: 챕터·저장·오디오·점프)
+tools/         (공개 저장소에는 미포함) make_audio.py(음악 합성), build_single.mjs(단일 HTML 빌드), test.mjs / test_jump.mjs(헤드리스 테스트: 챕터·저장·오디오·점프)
 ```
 
 ## 새 챕터 추가하기 (엔진 수정 불필요)
-1. `chapters/ch4.js` 생성 — `ch1.js`를 복사해서 수정:
+1. `chapters/ch9.js` 생성 — `ch1.js`를 복사해서 수정:
    - `id, order, title, subtitle, art, music, intro[], palette{skyTop, skyMid, skyBottom, fog, fogNear, fogFar, hemi, ambient, stars, hue, sat}`
    - `spawn {x,z,yaw}`, 선택 `spawns{이름:{...}}`, `bounds [minX,minZ,maxX,maxZ]`, `next`(클리어 시 해금할 챕터), `ending`
    - `objects[]`: `floor, box, corridor, room, water, cloud, lamp` + 모델 타입(`door, bed, tv, duck, phone, house, whale, tree, pillar, swing, fish, mailbox, tallhat, jelly, moon, sun, stairs, blocks, bunny, musicbox, lamppost, sign, orb, fridge, sheep`)
    - 상호작용 속성: `text`(자막), `mood:[고요, 기묘]`, `link:{to:'ch2'|'random', spawn}`, `goal:true`, `secret:'id'`, `r`(닿는 반경), `reflect`, `wander/speed`(돌아다니기)
    - `mutations[]`: `{ when:{dayMod:[n,r] | dayMin:n | chance:p}, add:[objects], palette:{}, hueDrift, text }` — 꿈 일수/방문에 따라 장면이 조금씩 변함
 2. `chapters/manifest.js`에 import 한 줄 + 배열에 추가.
-3. 이미지/음악이 새로 필요하면 `assets/`에 넣고 `js/assets.js`의 목록에 이름 추가 (`tools/make_audio.py`에 `ambient('ch4', ...)` 추가 가능).
+3. 이미지/음악이 새로 필요하면 `assets/`에 넣고 `js/assets.js`의 목록에 이름 추가 (`tools/make_audio.py`에 `ambient('ch9', ...)` 추가 가능).
 4. `node tools/build_single.mjs`로 단일 HTML 재빌드, `sw.js`의 VERSION/FILES 갱신.
 새 모델 타입이 필요하면 `js/models.js`의 `M` 객체에 함수 하나만 추가하면 됩니다.
 

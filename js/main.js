@@ -189,16 +189,16 @@ function renderSlots(){
     const el = document.createElement('button'); el.className = 'slot' + (r ? '' : ' empty');
     el.innerHTML = `<b>${n === 0 ? '자동 기록' : `기록 ${n}`}</b><span>${r ? `${r.where?.title || ''} · ${(r.profile?.day || 0) + 1}일째 · ✧${r.profile?.secrets?.length || 0} ◇${r.profile?.rooms?.length || 0} · ${fmt(r.savedAt)}` : '비어 있음'}</span>`;
     el.onclick = () => {
-      if (slotMode === 'save'){ const p = state.localPlayer; if (r && !confirm('이 기록을 덮어쓸까요?')) return; const sp1 = p.safe || p.pos; save.saveSlot(n, { scene: state.sceneId, pos: { x: sp1.x, z: sp1.z }, yaw: p.yaw, title: curCh?.title }); toast('기록했다'); renderSlots(); }
-      else if (r){ const where = save.loadSlot(n); Object.assign(S, save.data); toast('기록을 불러왔다'); if (where?.scene && chapters.has(where.scene)) startDream(where.scene, { x: where.pos.x, z: where.pos.z, yaw: where.yaw }); else toMenu(); }
+      if (slotMode === 'save'){ const p = state.localPlayer; if (r && !confirm('이 기록을 덮어쓸까요?')) return; const sp1 = p.safe || p.pos; save.saveSlot(n, { scene: state.sceneId, pos: { x: sp1.x, z: sp1.z }, yaw: p.yaw, title: curCh?.title }); toast('기록했어요'); renderSlots(); }
+      else if (r){ const where = save.loadSlot(n); Object.assign(S, save.data); toast('기록을 불러왔어요'); if (where?.scene && chapters.has(where.scene)) startDream(where.scene, { x: where.pos.x, z: where.pos.z, yaw: where.yaw }); else toMenu(); }
     };
     box.appendChild(el); }
 }
 $('#slotback').onclick = () => { if (slotBack === 'pause') show('pause'); else toMenu(); };
-$('#exportbtn').onclick = () => { const code = save.exportCode(); $('#codebox').value = code; $('#codebox').select(); try { navigator.clipboard?.writeText(code); toast('백업 코드를 복사했다'); } catch {} };
+$('#exportbtn').onclick = () => { const code = save.exportCode(); $('#codebox').value = code; $('#codebox').select(); try { navigator.clipboard?.writeText(code); toast('백업 코드를 복사했어요'); } catch {} };
 $('#exportfile').onclick = () => { const blob = new Blob([save.exportCode()], { type: 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `gohome-save-day${S.day}.txt`; document.body.appendChild(a); a.click(); a.remove(); };
-$('#importbtn').onclick = () => { try { save.importCode($('#codebox').value); Object.assign(S, save.data); toast('백업을 불러왔다'); renderSlots(); } catch (e){ alert('코드를 읽을 수 없어요: ' + e.message); } };
-$('#importfile').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { save.importCode(await f.text()); Object.assign(S, save.data); toast('백업 파일을 불러왔다'); renderSlots(); } catch (err){ alert('파일을 읽을 수 없어요: ' + err.message); } e.target.value = ''; };
+$('#importbtn').onclick = () => { try { save.importCode($('#codebox').value); Object.assign(S, save.data); toast('백업을 불러왔어요'); renderSlots(); } catch (e){ alert('코드를 읽을 수 없어요: ' + e.message); } };
+$('#importfile').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { save.importCode(await f.text()); Object.assign(S, save.data); toast('백업 파일을 불러왔어요'); renderSlots(); } catch (err){ alert('파일을 읽을 수 없어요: ' + err.message); } e.target.value = ''; };
 $('#codebox').addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
 
 let titleTaps = 0, titleTapT = 0;

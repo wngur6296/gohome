@@ -30,7 +30,7 @@ export default {
     { type: 'zone', x: 7, z: -150, r: 2.5, room: 'ch7_tunnel', warp: { x: 200, z: 3, yaw: 0 }, text: '선로 끝, 어둠 속 작은 문틈으로 빛이 새어 나온다.' },
     { type: 'room', x: 200, z: 0, w: 7, d: 8, height: 2.6, floor: 'rail', wallTex: 'concrete', ceilColor: '#3a3050' },
     { type: 'lamp', x: 200, y: 2.55, z: 0, light: true, color: '#ffd8a0', intensity: 6 },
-    { type: 'orb', x: 200, z: -2.5, y: 1, color: '#ffe0b0', r: 1, room: 'ch7_tunnel', text: '기억의 조각 · 터널 속 작은 방. 벽에 분필로 "어른이어도, 여기서 쉬었다 가도 돼".' },
+    { type: 'orb', x: 200, z: -2.5, y: 1, color: '#ffe0b0', r: 1, room: 'ch7_tunnel', text: '기억의 조각 · 터널 속 작은 방. 벽에 분필로 "어른이 되어도, 여기서 쉬었다 가도 돼".' },
     { type: 'door', x: 200, z: 3.88, rot: Math.PI, glow: '#fff', r: 1, warp: { x: 0, z: -140, yaw: 0 }, text: '다시 승강장 끝으로.' },
     // the platform repeats twice before the end appears
     { type: 'zone', x: 0, z: -95, r: 3.4, loop: { times: 2, dz: 55, texts: ['…가로등 개수가 같다.', '같은 사람들이 같은 자리에 서 있다.'] } },

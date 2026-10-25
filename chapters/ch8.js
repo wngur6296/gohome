@@ -7,7 +7,7 @@ export default {
   bounds: [-14, -2, 14, 75], next: null, ending: true,
   endText: '현관문을 열자 따뜻한 불빛이 쏟아졌다. "왔구나." 키는 문틀보다 커졌지만, 그 목소리 앞에서 나는 여전히 아이였다. 어른인 나도, 아이인 나도 — 둘 다 집에 돌아왔다. …그리고 내일 밤, 또 다른 꿈이 기다린다.',
   strange: { spots: [[0, 12], [0, 22], [0, 32], [-6, 52], [6, 56], [-4, 62], [5, 60], [0, 48]], watchers: 6, flipped: 4, giants: 0, skyfaces: 2,
-    whispers: ['어서 와. 아니, 아직이야.', '많이 컸구나. 그래도 그대로네.', '어른이어도 집에 와도 돼.', '이 액자 속 사람, 원래 누구였지?', '복도는 네가 셀 때만 길어져.', '현관은 저 끝에 있어. 늘 그랬어.', '괜찮아. 다 왔어.'] },
+    whispers: ['어서 와. 아니, 아직이야.', '많이 컸구나. 그래도 그대로네.', '어른이 되어도, 집에 와도 돼.', '이 액자 속 사람, 원래 누구였지?', '복도는 네가 셀 때만 길어져.', '현관은 저 끝에 있어. 늘 그랬어.', '괜찮아. 다 왔어.'] },
   objects: [
     { type: 'corridor', x: 0, z: 0, len: 44, dir: 'z', width: 3, height: 2.8, capStart: true, floor: 'wood', wallTex: 'wallpaper', wallColor: '#ffe8d8', lampEvery: 5.5, lights: true, lampColor: '#ffd8a8', flicker: true,
       gaps: [{ at: 20, side: 'l', w: 1.4 }] },
@@ -15,7 +15,7 @@ export default {
     { type: 'frame', x: -1.45, y: 1.6, z: 32, rot: Math.PI / 2, color: '#fff8f0', gaze: 5, gazeY: 0, gazeAngle: .12, gazeDist: 8, room: 'ch8_photo', warp: { x: 200, z: 3, yaw: 0 }, text: '빈 액자를 오래 바라보니, 그 안으로 걸어 들어가게 되었다.' },
     { type: 'door', x: 1.45, z: 17, rot: -Math.PI / 2, r: .9, text: '내 방 문이다. 열어 보니 또 이 복도다.', mood: [0, 2] },
     { type: 'door', x: -1.45, z: 38, rot: Math.PI / 2, r: .9, text: '안방 문. 문 너머에서 TV 소리. 열리지 않는다.', mood: [1, 2] },
-    { type: 'heightmarks', x: -1.48, z: 11, rot: Math.PI / 2, marks: [.7, .85, 1.0, 1.12, 1.25, 1.36], r: 1.2, text: '문틀에 키 재기 눈금. 다섯 살, 일곱 살, 열 살… 맨 위 눈금이 지금 내 가슴께에 있다.', mood: [2, 1] },
+    { type: 'heightmarks', x: -1.48, z: 11, rot: Math.PI / 2, marks: [.7, .85, 1.0, 1.12, 1.25, 1.36], r: 1.2, text: '문틀에 키재기 눈금. 다섯 살, 일곱 살, 열 살… 맨 위 눈금이 지금 내 가슴께에 있다.', mood: [2, 1] },
     { type: 'text', x: 0, z: 6, r: 2, text: '벽지 무늬가 나를 보고 웃는다. 이상하게 반갑다.', mood: [1, 2] },
     // the hallway repeats four times
     { type: 'zone', x: 0, z: 36, r: 1.6, loop: { times: 4, dz: -24, texts: ['…같은 복도다.', '액자가 하나 늘었다.', '전등이 나를 따라 깜빡인다.', '괜찮아. 거의 다 왔어.'] } },
