@@ -1,6 +1,6 @@
 // Renderer: reads GameState, builds three.js scene from chapter data, PS1 + dream post FX.
 import * as THREE from '../vendor/three.module.js';
-import { tex } from './textures.js';
+import { tex, setTexMood, texMoodKey } from './textures.js';
 import { buildModel } from './models.js';
 import { platformOffset } from './state.js';
 
@@ -24,7 +24,7 @@ export function psxify(mat){
 }
 const matCache = new Map();
 export function mat(opts = {}){
-  const key = JSON.stringify(opts) + JSON.stringify(mat.swap || {}); if (matCache.has(key)) return matCache.get(key);
+  const key = JSON.stringify(opts) + JSON.stringify(mat.swap || {}) + texMoodKey(); if (matCache.has(key)) return matCache.get(key);
   const m = psxify(new THREE.MeshLambertMaterial({
     color: new THREE.Color(opts.color || '#ffffff'), map: opts.tex ? tex((mat.swap && mat.swap[opts.tex]) || opts.tex) : null,
     emissive: new THREE.Color(opts.emissive || '#000000'), transparent: !!opts.opacity, opacity: opts.opacity ?? 1,
@@ -88,19 +88,24 @@ export class Renderer {
 
   /** Build visuals for a chapter. Returns colliders + interactables to the game. */
   build(ch, rng, extra){
-    this.clear(); const P = ch.palette; const st = ch.strangeness || 0; this.strange = st;
+    this.clear(); let P = ch.palette; const st = ch.strangeness || 0; this.strange = st;
     mat.swap = st >= .55 ? { wallpaper: 'facepaper', stars: 'eyestars' } : (st >= .3 ? { wallpaper: 'wallpaper2' } : {});
-    psx.warp.value = Math.max(0, st - .2) * 1.2;
-    const U = this.postU; U.uWobble.value = 1 + st * 5; U.uAber.value = .004 + st * .01; U.uStrange.value = st;
+    // accumulated mood (chapters/moods.js): same space, different texture variants + palette/post nudges
+    const md = extra.mood?.def, ml = extra.mood?.level || 0; this.mood = extra.mood || null; setTexMood(md, ml);
+    if (md && ml >= .35) mat.swap = Object.fromEntries(Object.entries({ ...mat.swap }).map(([k, v]) => [k, md.swap?.[v] || v]).concat(Object.entries(md.swap || {}).filter(([k]) => !(k in mat.swap))));
+    const mp = md?.post || {}, lerp = (k) => 1 + ((mp[k] ?? 1) - 1) * ml;
+    psx.warp.value = Math.max(0, st - .2) * 1.2 + (md?.warpAdd || 0) * ml;
+    const U = this.postU; U.uWobble.value = (1 + st * 5) * lerp('wobble'); U.uAber.value = (.004 + st * .01) * lerp('aber'); U.uStrange.value = st; U.uGrain.value = .05 * lerp('grain'); U.uBloom.value = lerp('bloom');
+    if (md){ const pp = md.palette || {}; P = { ...P, fogFar: (P.fogFar ?? 45) * (1 + ((pp.fogFarMul ?? 1) - 1) * ml) }; }
     this.scene.fog = new THREE.Fog(P.fog, P.fogNear ?? 6, P.fogFar ?? 45); this.r.setClearColor(P.fog);
     this.world.add(new THREE.HemisphereLight(P.skyTop, P.ground || P.fog, P.hemi ?? 1.1)); this.world.add(new THREE.AmbientLight(P.ambient || '#fff2f6', P.ambientI ?? 1.4));
     const sun = new THREE.DirectionalLight(P.sun || '#fff4e0', P.sunI ?? 0.9); sun.position.set(3, 10, 4); this.world.add(sun);
     this.world.add(this.sky(P));
-    this.postU.uHue.value = (P.hue || 0) + (extra.hueDrift || 0); this.postU.uSat.value = P.sat ?? 1;
-    const colliders = [], things = []; this.grounds = [];
+    this.postU.uHue.value = (P.hue || 0) + (extra.hueDrift || 0) + (md?.palette?.hueAdd || 0) * ml; this.postU.uSat.value = (P.sat ?? 1) * (1 + ((md?.palette?.satMul ?? 1) - 1) * ml);
+    const colliders = [], things = []; this.grounds = []; this.ceilings = [];
     const objs = [...ch.objects, ...extra.objects];
     for (const o of objs) this.add(o, colliders, things, rng);
-    return { colliders, things, grounds: this.grounds };
+    return { colliders, things, grounds: this.grounds, ceilings: this.ceilings };
   }
   sky(P){
     const g = new THREE.SphereGeometry(300, 24, 16);
@@ -124,7 +129,7 @@ export class Renderer {
     const ground = (x, z, w, d, top, extra) => this.grounds.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2, top, ...extra });
     switch (o.type){
       case 'floor': { const m = this.box(o, o.w, 0.2, o.d, mat({ tex: o.tex, color: o.color })); m.position.set(o.x || 0, (o.y || 0) - 0.1, o.z || 0); W.add(m); if (o.walk !== false) ground(o.x || 0, o.z || 0, o.w, o.d, o.y || 0); break; }
-      case 'box': { mesh = this.box(o, o.w, o.h, o.d, mat({ tex: o.tex, color: o.color, emissive: o.emissive })); mesh.position.set(o.x, (o.y || 0) + o.h / 2, o.z); if (o.rot) mesh.rotation.y = o.rot; W.add(mesh); if (o.solid !== false){ const sw = o.rot && Math.abs(Math.sin(o.rot)) > .7; solid(o.x, o.z, sw ? o.d : o.w, sw ? o.w : o.d, o.y || 0, (o.y || 0) + o.h); } break; }
+      case 'box': { mesh = this.box(o, o.w, o.h, o.d, mat({ tex: o.tex, color: o.color, emissive: o.emissive })); mesh.position.set(o.x, (o.y || 0) + o.h / 2, o.z); if (o.rot) mesh.rotation.y = o.rot; W.add(mesh); if (o.solid !== false){ const sw = o.rot && Math.abs(Math.sin(o.rot)) > .7; const tall = o.wall || (o.h >= 2.4 && !o.walk); /* walls & tall boxes: no walkable top, can't be climbed or jumped over */ solid(o.x, o.z, sw ? o.d : o.w, sw ? o.w : o.d, o.y || 0, tall ? 99 : (o.y || 0) + o.h); } break; }
       case 'platform': { // jumpable surface: stone / cloud / tile / door / book …, optional `move:{axis,amp,speed,phase}`
         const w = o.w || 1.6, d = o.d || 1.6, h = o.h || .35, st = o.style || 'stone'; const grp = new THREE.Group();
         if (st === 'cloud'){ const cm = mat({ color: o.color || '#ffffff', emissive: o.glow || '#9a8aa0' }); const n = Math.max(3, Math.round(w * 1.6)); for (let i = 0; i < n; i++){ const p = new THREE.Mesh(new THREE.IcosahedronGeometry(Math.min(w, d) * .38 * (0.8 + rng() * .4), 1), cm); p.position.set((i / (n - 1) - .5) * w * .8, -.25, (rng() - .5) * d * .4); p.scale.y = .55; grp.add(p); } }
@@ -162,27 +167,27 @@ export class Renderer {
     const cx = o.x + (alongX ? len / 2 : 0), cz = o.z + (alongX ? 0 : len / 2);
     const fw = alongX ? len : wd, fd = alongX ? wd : len;
     this.add({ type: 'floor', x: cx, z: cz, w: fw, d: fd, tex: o.floor || 'carpet', color: o.floorColor }, col, [], Math.random);
-    if (o.ceiling !== false){ const c = this.box({}, fw, .2, fd, mat({ tex: o.ceilTex || 'plain', color: o.ceilColor || '#f2ecf5' })); c.position.set(cx, h + .1, cz); this.world.add(c); }
+    if (o.ceiling !== false){ const c = this.box({}, fw, .2, fd, mat({ tex: o.ceilTex || 'plain', color: o.ceilColor || '#f2ecf5' })); c.position.set(cx, h + .1, cz); this.world.add(c); this.ceilings.push({ minX: cx - fw / 2, maxX: cx + fw / 2, minZ: cz - fd / 2, maxZ: cz + fd / 2, y: h }); }
     const gaps = o.gaps || []; // positions along length (0..len) left open on both sides: [{at, side:'l'|'r'|'b', w}]
     for (const side of [-1, 1]){
       let segs = [[0, len]]; for (const gp of gaps) if (gp.side === 'b' || (gp.side === 'l' ? -1 : 1) === side){ segs = segs.flatMap(([a, b]) => { const g0 = gp.at - (gp.w || 2) / 2, g1 = gp.at + (gp.w || 2) / 2; if (g1 <= a || g0 >= b) return [[a, b]]; return [[a, g0], [g1, b]].filter(s => s[1] - s[0] > .05); }); }
       for (const [a, b] of segs){ const L = b - a, mid = a + L / 2;
         const x = alongX ? o.x + mid : o.x + side * (wd / 2 + .1), z = alongX ? o.z + side * (wd / 2 + .1) : o.z + mid;
-        this.add({ type: 'box', x, z, w: alongX ? L : .2, d: alongX ? .2 : L, h, tex: o.wallTex || 'wallpaper', color: o.wallColor }, col, [], Math.random); }
+        this.add({ type: 'box', x, z, w: alongX ? L : .2, d: alongX ? .2 : L, h, wall: true, tex: o.wallTex || 'wallpaper', color: o.wallColor }, col, [], Math.random); }
     }
-    if (o.capStart) this.add({ type: 'box', x: alongX ? o.x - .1 : o.x, z: alongX ? o.z : o.z - .1, w: alongX ? .2 : wd, d: alongX ? wd : .2, h, tex: o.wallTex || 'wallpaper', color: o.wallColor }, col, [], Math.random);
-    if (o.capEnd) this.add({ type: 'box', x: alongX ? o.x + len + .1 : o.x, z: alongX ? o.z : o.z + len + .1, w: alongX ? .2 : wd, d: alongX ? wd : .2, h, tex: o.wallTex || 'wallpaper', color: o.wallColor }, col, [], Math.random);
+    if (o.capStart) this.add({ type: 'box', x: alongX ? o.x - .1 : o.x, z: alongX ? o.z : o.z - .1, w: alongX ? .2 : wd, d: alongX ? wd : .2, h, wall: true, tex: o.wallTex || 'wallpaper', color: o.wallColor }, col, [], Math.random);
+    if (o.capEnd) this.add({ type: 'box', x: alongX ? o.x + len + .1 : o.x, z: alongX ? o.z : o.z + len + .1, w: alongX ? .2 : wd, d: alongX ? wd : .2, h, wall: true, tex: o.wallTex || 'wallpaper', color: o.wallColor }, col, [], Math.random);
     const step = o.lampEvery || 6;
     for (let s = step / 2; s < len; s += step) this.add({ type: 'lamp', x: alongX ? o.x + s : o.x, z: alongX ? o.z : o.z + s, y: h - .05, rot: alongX ? 0 : Math.PI / 2, color: o.lampColor, light: o.lights && ((s / step) | 0) % 2 === 0, flicker: o.flicker && Math.random() < .2 }, col, [], Math.random);
   }
   room(o, col){ // walled room with optional door gaps [{wall:'n'|'s'|'e'|'w', at, w}]
     const { x, z, w, d } = o, h = o.height || 3.2;
     this.add({ type: 'floor', x, z, w, d, tex: o.floor, color: o.floorColor }, col, [], Math.random);
-    if (o.ceiling !== false){ const c = this.box({}, w, .2, d, mat({ tex: o.ceilTex || 'plain', color: o.ceilColor || '#f5f0f8' })); c.position.set(x, h + .1, z); this.world.add(c); }
+    if (o.ceiling !== false){ const c = this.box({}, w, .2, d, mat({ tex: o.ceilTex || 'plain', color: o.ceilColor || '#f5f0f8' })); c.position.set(x, h + .1, z); this.world.add(c); this.ceilings.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2, y: h }); }
     const walls = { n: [x, z - d / 2, w, true], s: [x, z + d / 2, w, true], w: [x - w / 2, z, d, false], e: [x + w / 2, z, d, false] };
     for (const k in walls){ const [wx, wz, L, horiz] = walls[k]; let segs = [[-L / 2, L / 2]];
       for (const gp of (o.gaps || []).filter(g => g.wall === k)){ segs = segs.flatMap(([a, b]) => { const g0 = gp.at - (gp.w || 1.6) / 2, g1 = gp.at + (gp.w || 1.6) / 2; if (g1 <= a || g0 >= b) return [[a, b]]; return [[a, g0], [g1, b]].filter(s => s[1] - s[0] > .05); }); }
-      for (const [a, b] of segs){ const m = (a + b) / 2, l = b - a; this.add({ type: 'box', x: horiz ? wx + m : wx, z: horiz ? wz : wz + m, w: horiz ? l : .2, d: horiz ? .2 : l, h, tex: o.wallTex || 'wallpaper', color: o.wallColor }, col, [], Math.random); }
+      for (const [a, b] of segs){ const m = (a + b) / 2, l = b - a; this.add({ type: 'box', x: horiz ? wx + m : wx, z: horiz ? wz : wz + m, w: horiz ? l : .2, d: horiz ? .2 : l, h, wall: true, tex: o.wallTex || 'wallpaper', color: o.wallColor }, col, [], Math.random); }
     }
   }
   /** Sync remote/other player avatars (future multiplayer) */

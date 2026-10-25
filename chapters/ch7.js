@@ -19,12 +19,13 @@ export default {
     { type: 'lamppost', x: -3, z: -10 }, { type: 'lamppost', x: -3, z: -25 }, { type: 'lamppost', x: -3, z: -40 }, { type: 'lamppost', x: -3, z: -55 }, { type: 'lamppost', x: -3, z: -70 }, { type: 'lamppost', x: -3, z: -85 }, { type: 'lamppost', x: -3, z: -100 }, { type: 'lamppost', x: -3, z: -115 },
     { type: 'sign', x: -2.5, z: -6, color: '#e8f0ff', r: 1.4, text: '역 이름: "집". 그 아래 작은 글씨: "(이 역이 아닙니다)"', mood: [0, 2] },
     { type: 'sign', x: -2.5, z: -60, color: '#e8f0ff', r: 1.4, text: '역 이름: "집". 아까와 같은 표지판이다.', mood: [0, 2] },
-    { type: 'box', x: -2, z: -48, w: 2, h: .45, d: .6, tex: 'wood', color: '#c8b8e8' },
+    { type: 'bench', x: -2, z: -48.1, color: '#c8b8e8', solid: [1.6, .45], solidTop: .5 },
     // HIDDEN ROOM 1: sit (stand still) by the bench for 10 seconds
     { type: 'zone', x: -2, z: -47, r: 1.3, still: 10, room: 'ch7_waiting', warp: { x: 260, z: 3, yaw: 0 }, text: '벤치 옆에서 기다렸다. 기다리는 동안, 정거장이 사라졌다.' },
     { type: 'room', x: 260, z: 0, w: 10, d: 9, height: 3.5, floor: 'checker', wallTex: 'wallpaper', ceilColor: '#e0d8f8' },
     { type: 'clock', x: 258, y: 2.2, z: -4.38 }, { type: 'clock', x: 262, y: 2.2, z: -4.38, spin: .9 }, { type: 'watcher', x: 262, z: 1, h: 1.9, watch: .3, face: false },
     { type: 'orb', x: 259, z: -2, y: 1.2, color: '#d8c8ff', r: 1.1, room: 'ch7_waiting', text: '기억의 조각 · 대합실. 어릴 때 마중 나와 주던 사람이 앉아 있던 자리. 아직 따뜻하다.' },
+    { type: 'bench', x: 260, z: -4, solid: [1.6, .45] }, // 대합실 자리
     { type: 'door', x: 260, z: 4.38, rot: Math.PI, glow: '#fff', r: 1, warp: { x: -1, z: -50, yaw: 0 }, text: '승강장으로.' },
     // HIDDEN ROOM 2: walk down onto the tracks, all the way to the end
     { type: 'zone', x: 7, z: -150, r: 2.5, room: 'ch7_tunnel', warp: { x: 200, z: 3, yaw: 0 }, text: '선로 끝, 어둠 속 작은 문틈으로 빛이 새어 나온다.' },

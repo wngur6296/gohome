@@ -8,6 +8,7 @@ import { save, SLOTS } from './save.js';
 import { ASSETS } from './assets.js';
 import { strangeLayer, glitchText, DEFAULT_WHISPERS } from './strange.js';
 import CHAPTERS from '../chapters/manifest.js';
+import { moodProfile, MOODS } from './moodfx.js';
 
 const $ = s => document.querySelector(s);
 const chapters = new Map(CHAPTERS.map(c => [c.id, c]));
@@ -53,7 +54,10 @@ function boundsFor(ch, objs){ if (!ch.bounds) return null; const b = [...ch.boun
   return b; }
 
 async function loadScene(id, spawnName, { first = false, at = null } = {}){
-  if (id === 'random'){ const pool = CHAPTERS.filter(c => !c.hidden && c.id !== state.sceneId && (S.unlocked.includes(c.id) || c.order <= 3)); id = pool[Math.floor(Math.random() * pool.length)].id; }
+  if (id === 'random'){ // forward-only: never sends the player back to an earlier chapter
+    const cur = chapters.get(state.sceneId), o = cur && !cur.hidden ? cur.order : 0;
+    const pool = CHAPTERS.filter(c => !c.hidden && c.order > o && c.order <= o + 2);
+    id = pool.length ? pool[Math.floor(Math.random() * pool.length)].id : (cur?.next || state.sceneId); }
   const ch = chapters.get(id); if (!ch) return; curCh = ch;
   const visits = (S.visited[id] = (S.visited[id] || 0) + 1); save.write();
   const rng = rngFrom(S.day * 31 + visits * 7 + id.length * 13);
@@ -61,7 +65,8 @@ async function loadScene(id, spawnName, { first = false, at = null } = {}){
   mut.objects.push(...strangeLayer(ch, rng));
   const chView = { ...ch, palette: { ...ch.palette, ...mut.palette } };
   state.clearScene(); state.sceneId = id; state.bounds = boundsFor(ch, [...ch.objects, ...mut.objects]);
-  const built = renderer.build(chView, rng, mut); state.colliders = built.colliders; state.grounds = built.grounds; state.killY = ch.killY ?? -6; things = built.things.map(t => ({ ...t, used: false, acc: 0, count: 0 }));
+  mut.mood = moodProfile(S.moods); const built = renderer.build(chView, rng, mut); state.colliders = built.colliders; state.grounds = built.grounds; state.ceilings = built.ceilings || []; // furniture tops too close to a ceiling can't be stood on (no head through the ceiling)
+  for (const c of state.colliders) if (c.maxY < 50) for (const ce of state.ceilings) if (c.maxX > ce.minX && c.minX < ce.maxX && c.maxZ > ce.minZ && c.minZ < ce.maxZ && c.maxY + 1.7 > ce.y){ c.maxY = 99; break; } state.killY = ch.killY ?? -6; things = built.things.map(t => ({ ...t, used: false, acc: 0, count: 0 }));
   const p = state.localPlayer; const sp = at || (spawnName && ch.spawns?.[spawnName]) || ch.spawn;
   placePlayer(p, sp.x, sp.z, sp.yaw || 0); p.pitch = 0;
   dream.scenes.push(id); if (!ch.hidden) save.unlock(id);
@@ -141,7 +146,7 @@ async function endDream(goalThing){
   fading = false;
 }
 function showMood(pt, ending, endText){
-  show('mood'); $('#moodday').textContent = `${pt.day}일째 꿈`;
+  show('mood'); $('#hud').classList.remove('on'); $('#moodday').textContent = `${pt.day}일째 꿈`;
   $('#moodscenes').textContent = pt.scenes.map(id => chapters.get(id)?.title).join(' → ');
   $('#moodend').textContent = endText || (ending ? '집에 도착했다.' : '');
   const c = $('#moodcv'), g = c.getContext('2d'), W = c.width = 560, H = c.height = 560; g.clearRect(0, 0, W, H);
@@ -150,6 +155,10 @@ function showMood(pt, ending, endText){
   g.strokeStyle = 'rgba(120,100,150,.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(X(-1), Y(0)); g.lineTo(X(1), Y(0)); g.moveTo(X(0), Y(-1)); g.lineTo(X(0), Y(1)); g.stroke();
   g.font = '30px "AppleMyungjo","Nanum Myeongjo",serif'; g.fillStyle = '#6a5a86'; g.textAlign = 'center';
   g.fillText('기묘함', X(0), Y(1) - 8); g.fillText('익숙함', X(0), Y(-1) + 26); g.textAlign = 'left'; g.fillText('고요', X(1) - 60, Y(0) - 10); g.fillText('일렁임', X(-1), Y(0) - 10);
+  const mp = moodProfile(S.moods), hint = $('#moodhint');
+  if (hint){ hint.textContent = mp.def ? `${mp.def.hint} (${mp.def.label} ${Math.round(mp.level * 100)}%)` : '아직은 어느 쪽으로도 기울지 않았다. 꿈을 꿀수록 같은 곳도 조금씩 다르게 보일 것이다.';
+    hint.dataset.mood = mp.dominant || ''; }
+  { const wq = { calm: [1, 0], sway: [-1, 0], strange: [0, 1], familiar: [0, -1] }; for (const id in wq){ const v = mp.weights[id]; if (v <= 0) continue; g.fillStyle = id === mp.dominant ? 'rgba(255,122,182,.22)' : 'rgba(150,130,200,.12)'; g.beginPath(); g.arc(X(wq[id][0] * .6), Y(wq[id][1] * .6), 20 + v * 120, 0, 7); g.fill(); } }
   const all = S.moods.slice(-12); g.lineWidth = 1.5; g.strokeStyle = 'rgba(200,140,190,.5)'; g.beginPath(); all.forEach((m, i) => i ? g.lineTo(X(m.x), Y(m.y)) : g.moveTo(X(m.x), Y(m.y))); g.stroke();
   all.forEach((m, i) => { const last = i === all.length - 1; g.fillStyle = last ? '#ff7ab6' : 'rgba(160,130,200,.6)'; g.beginPath(); g.arc(X(m.x), Y(m.y), last ? 10 : 5, 0, 7); g.fill(); if (last){ g.strokeStyle = 'rgba(255,122,182,.4)'; g.lineWidth = 6; g.beginPath(); g.arc(X(m.x), Y(m.y), 18, 0, 7); g.stroke(); } });
 }
@@ -262,5 +271,5 @@ const sb = $('#soundbtn'); let blockedFor = 0;
 setInterval(() => { const b = (mode !== 'title') && audio.blocked(); blockedFor = b ? blockedFor + 1 : 0; sb.classList.toggle('on', blockedFor >= 2); }, 1000);
 sb.addEventListener('click', e => { e.stopPropagation(); audio.unlock(); const w = audio.want; if (w) audio.playMusic(w.name, 1, w.strange, true); toast('소리가 안 들리면 무음 모드(옆 스위치)를 끄고 볼륨을 올려 주세요'); });
 show('title'); $('#titlebg').style.backgroundImage = `url(${ASSETS.img.title})`;
-window.__gohome = { state, bus, chapters, save, link, warp, loadScene, startDream, renderer, input, audio, things: () => things, busy: () => fading, audioStatus: () => audio.status(), SECRET_IDS, ROOM_IDS, openSlots };
+window.__gohome = { moodProfile, showMood: pt => showMood(pt || S.moods[S.moods.length - 1] || { day: S.day, x: 0, y: 0, scenes: [] }), state, bus, chapters, save, link, warp, loadScene, startDream, renderer, input, audio, things: () => things, busy: () => fading, audioStatus: () => audio.status(), SECRET_IDS, ROOM_IDS, openSlots };
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(() => {});

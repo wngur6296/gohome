@@ -26,6 +26,7 @@ export default {
     { type: 'room', x: -11, z: -2, w: 6, d: 4, height: 2, floor: 'wood', wallTex: 'wood', ceilTex: 'wood', gaps: [{ wall: 'e', at: 0, w: 1.6 }] },
     { type: 'blocks', x: -12, z: -2.5, n: 4 }, { type: 'bunny', x: -13, z: -1.5, flip: true, y: 2 },
     { type: 'orb', x: -12.5, z: -1.6, y: .9, color: '#ffe0f0', r: 1, room: 'ch6_attic', text: '기억의 조각 · 다락방. 내 이름이 적힌 상자 속에 어린 내가 쓴 쪽지: "어른이 된 나에게. 아직도 놀고 있니?"' },
+    { type: 'cardbox', x: -12.1, z: -2.9, rot: .2 }, // 이름이 적힌 상자
     // the room loops into itself through the north door, three times
     { type: 'corridor', x: 0, z: -11, len: 4, dir: 'z', width: 1.8, height: 2.6, capStart: true, floor: 'carpet', wallTex: 'wallpaper' },
     // JUMP: an upside-down sofa blocks the way out

@@ -11,7 +11,7 @@ export default {
     { type: 'water', y: 0, size: 240, color: '#d8f4f4', opacity: .9 },
     { type: 'sun', x: 0, y: 18, z: -180, r: 70, color: '#ffd0e0' },
     { type: 'text', x: 0, z: -4, r: 3, text: '물 위를 걷고 있다. 어릴 땐 이런 일이 정말 가능하다고 믿었다.', mood: [2, 0] },
-    { type: 'door', x: -8, z: -14, rot: .3, reflect: true, r: 1.1, link: { to: 'ch1', spawn: 'hall' }, text: '문 너머로 형광등 소리가 들린다.' },
+    { type: 'door', x: -8, z: -14, rot: .3, reflect: true, r: 1.1, link: { to: 'ch3' }, text: '문 너머로 형광등 소리가 들린다. 그런데 이 문은 앞으로만 열린다.' },
     { type: 'door', x: 9, z: -22, rot: -.4, reflect: true, r: 1.1, link: { to: 'random' }, mood: [0, 2] },
     { type: 'door', x: -18, y: 3, z: -35, rot: .8, glow: '#fff', r: 0 },
     { type: 'door', x: 16, y: 5, z: -48, rot: -1.2, r: 0 },

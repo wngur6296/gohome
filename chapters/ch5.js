@@ -18,6 +18,7 @@ export default {
     { type: 'box', x: 15, z: 5, w: .2, d: 2, h: 5, tex: 'pool', solid: false },
     { type: 'room', x: 18.5, z: 5, w: 7, d: 5, height: 2.5, floor: 'tiles', wallTex: 'pool', gaps: [{ wall: 'w', at: 0, w: 2 }] },
     { type: 'orb', x: 20.5, z: 5, y: 1, color: '#d0fff0', r: 1, room: 'ch5_drain', text: '기억의 조각 · 배수구 옆에 젖은 운동화 한 켤레. 내 신발이다. 이제는 발이 들어가지 않는다.' },
+    { type: 'sneakers', x: 20.9, z: 5.6, rot: .4 }, // 운동화 (memory orb mentions it)
     // HIDDEN ROOM 2: a doorway set too high on the wall — look at it for a while
     { type: 'door', x: -14.8, y: 3.2, z: -5, rot: Math.PI / 2, glow: '#f0ffff', gaze: 4, gazeY: 1.1, gazeAngle: .15, gazeDist: 25, room: 'ch5_high', warp: { x: 200, z: 4, yaw: 0 }, text: '높은 곳의 문을 오래 올려다보았더니, 어느새 문 안쪽에 서 있다.' },
     { type: 'room', x: 200, z: 0, w: 8, d: 10, height: 6, floor: 'pool', wallTex: 'pool', ceiling: false },

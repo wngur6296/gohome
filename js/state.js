@@ -14,18 +14,18 @@ export class Player extends Entity {
   applySnapshot(s){ Object.assign(this.pos, s.pos); this.yaw = s.yaw; this.pitch = s.pitch; }
 }
 export class GameState {
-  constructor(){ this.players = new Map(); this.entities = new Map(); this.sceneId = null; this.colliders = []; this.grounds = []; this.killY = -6; this.time = 0; this.dream = null; }
+  constructor(){ this.players = new Map(); this.entities = new Map(); this.sceneId = null; this.colliders = []; this.grounds = []; this.ceilings = []; this.killY = -6; this.time = 0; this.dream = null; }
   addPlayer(p){ this.players.set(p.id, p); bus.emit('player:join', { id: p.id, local: p.isLocal }); return p; }
   removePlayer(id){ this.players.delete(id); bus.emit('player:leave', { id }); }
   get localPlayer(){ for (const p of this.players.values()) if (p.isLocal) return p; }
-  clearScene(){ this.entities.clear(); this.colliders = []; this.grounds = []; }
+  clearScene(){ this.entities.clear(); this.colliders = []; this.grounds = []; this.ceilings = []; }
   addEntity(e){ this.entities.set(e.id, e); return e; }
 }
 // Moving platforms: pure function of time so every client computes the same position.
 export function platformOffset(m, t){ if (!m) return ZERO; const v = Math.sin(t * (m.speed || .5) + (m.phase || 0)) * (m.amp || 1);
   return m.axis === 'x' ? { x: v, y: 0, z: 0 } : m.axis === 'z' ? { x: 0, y: 0, z: v } : { x: 0, y: v, z: 0 }; }
 const ZERO = { x: 0, y: 0, z: 0 };
-export const PHYS = { gravity: 12, fallGravity: 7.5, jumpV: 5.6, maxFall: 8, coyote: .16, buffer: .16, step: .38 };
+export const PHYS = { gravity: 12, fallGravity: 7.5, jumpV: 4.7, maxFall: 8, coyote: .16, buffer: .16, step: .38 };
 /** Highest walkable surface under (x,z) not above maxY. Returns {top, g} or null. */
 export function groundAt(state, x, z, maxY, t){
   let best = null, bt = -1e9; const e = .12;
@@ -47,8 +47,8 @@ export function stepPlayer(state, p, cmd, dt){
   const ox = p.pos.x, oz = p.pos.z, t = state.time;
   // ride moving platforms
   if (p.grounded && p.groundRef?.move){ const a = platformOffset(p.groundRef.move, t - dt), b2 = platformOffset(p.groundRef.move, t); p.pos.x += b2.x - a.x; p.pos.z += b2.z - a.z; p.pos.y += b2.y - a.y; }
-  p.pos.x += p.vel.x * dt; collide(state, p);
-  p.pos.z += p.vel.z * dt; collide(state, p);
+  p.pos.x += p.vel.x * dt; collide(state, p); ceilBlock(state, p, ox, p.pos.z, 'x');
+  p.pos.z += p.vel.z * dt; collide(state, p); ceilBlock(state, p, p.pos.x, oz, 'z');
   // vertical: gravity, coyote time, jump buffer, soft dreamy fall
   const P = PHYS; p.jumpBuf = cmd.jump ? P.buffer : Math.max(0, p.jumpBuf - dt); p.coyote = p.grounded ? P.coyote : Math.max(0, p.coyote - dt);
   if (p.jumpBuf > 0 && p.coyote > 0){ p.vy = P.jumpV; p.grounded = false; p.coyote = 0; p.jumpBuf = 0; bus.emit('player:jump', { id: p.id }); }
@@ -60,6 +60,11 @@ export function stepPlayer(state, p, cmd, dt){
     const ny = p.pos.y + p.vy * dt;
     if (gnd && p.vy <= 0 && ny <= gnd.top){ const impact = -p.vy; p.pos.y = gnd.top; p.vy = 0; p.grounded = true; p.groundRef = gnd.g; if (impact > 2) bus.emit('player:land', { id: p.id, v: impact }); }
     else p.pos.y = ny;
+    // head bump: ceilings and the undersides of solids stop upward motion (no clipping through)
+    { const head = p.pos.y + p.height + .12;
+      for (const c of state.ceilings || []) if (p.pos.x > c.minX && p.pos.x < c.maxX && p.pos.z > c.minZ && p.pos.z < c.maxZ && head > c.y && p.pos.y < c.y){ p.pos.y = Math.max(0, c.y - p.height - .12); p.vy = Math.min(p.vy, 0); } }
+    if (p.vy > 0){ const head = p.pos.y + p.height + .12;
+      for (const c of state.colliders) if (c.minY > p.pos.y + .2 && head > c.minY && p.pos.x > c.minX - p.radius && p.pos.x < c.maxX + p.radius && p.pos.z > c.minZ - p.radius && p.pos.z < c.maxZ + p.radius){ p.pos.y = c.minY - p.height - .12; p.vy = 0; } }
   }
   if (p.grounded && !p.groundRef?.move && !p.groundRef?.noSafe){ const sx = p.pos.x, sz = p.pos.z; // remember last safe spot (with some margin from edges)
     if (groundAt(state, sx + .5, sz, p.pos.y + .05, t) && groundAt(state, sx - .5, sz, p.pos.y + .05, t) && groundAt(state, sx, sz + .5, p.pos.y + .05, t) && groundAt(state, sx, sz - .5, p.pos.y + .05, t)) p.safe = { x: sx, y: p.pos.y, z: sz, yaw: p.yaw }; }
@@ -69,6 +74,11 @@ export function stepPlayer(state, p, cmd, dt){
   p.moving = d / Math.max(dt, 1e-4);
   const b = state.bounds; if (b){ p.pos.x = Math.max(b[0], Math.min(b[2], p.pos.x)); p.pos.z = Math.max(b[1], Math.min(b[3], p.pos.z)); }
 }
+// Mid-air, you can't slide in under a lower ceiling (e.g. jumping through a doorway): that axis is blocked.
+function ceilBlock(state, p, px, pz, axis){ const head = p.pos.y + p.height + .02;
+  for (const c of state.ceilings || []){ if (p.pos.y >= c.y || head <= c.y) continue;
+    const inNow = p.pos.x > c.minX && p.pos.x < c.maxX && p.pos.z > c.minZ && p.pos.z < c.maxZ, inPrev = px > c.minX && px < c.maxX && pz > c.minZ && pz < c.maxZ;
+    if (inNow && !inPrev){ if (axis === 'x') p.pos.x = px; else p.pos.z = pz; p.vel[axis] = 0; } } }
 function collide(state, p){
   for (const c of state.colliders){
     if (c.maxY != null && (p.pos.y >= c.maxY - PHYS.step || p.pos.y + p.height <= c.minY)) continue;

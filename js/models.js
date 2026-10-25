@@ -50,7 +50,26 @@ const M = {
   stairs(o){ const g = new THREE.Group(); const m = mat({ color: o.color || '#ffffff', tex: o.tex }); for (let i = 0; i < (o.n || 10); i++) g.add(B(1.6, .25, .5, m, 0, i * .25 + .12, -i * .5)); return g; },
   blocks(o, rng){ const g = new THREE.Group(); const cols = ['#ffb3c7', '#b3e0ff', '#fff0a8', '#c8f0c0', '#e0c8ff']; for (let i = 0; i < (o.n || 6); i++){ const s = .3 + rng() * .5; const b = B(s, s, s, mat({ color: cols[i % 5] }), (rng() - .5) * 2, s / 2 + (i > 3 ? .5 : 0), (rng() - .5) * 2); b.rotation.y = rng() * 3; g.add(b); } return g; },
   bunny(o){ const g = new THREE.Group(); const m = mat({ color: o.color || '#fff4f8' }); g.add(S(.3, m, 0, .3, 0), S(.22, m, 0, .72, 0), B(.07, .35, .04, m, -.08, 1.05, 0), B(.07, .35, .04, m, .08, 1.05, 0)); return g; },
-  musicbox(){ const g = new THREE.Group(); g.add(B(.5, .3, .35, mat({ tex: 'wood', color: '#ffd8e8' }), 0, .15, 0)); const lid = B(.5, .04, .35, mat({ color: '#ffb8d0' }), 0, .45, -.15); lid.rotation.x = -1.1; g.add(lid); const s = glowSprite('#fff0c0', .7); s.material.opacity = .45; s.position.y = .5; g.add(s); return g; },
+  ballerina(o = {}, rng = Math.random, anim){ // tiny spinning dancer (also stands on every music box)
+    const g = new THREE.Group(), d = new THREE.Group(); g.add(d); const skin = mat({ color: '#ffe6d8' }), pink = mat({ color: o.color || '#ffb6d2', emissive: '#40182a' });
+    d.add(C(.05, .05, .012, mat({ color: '#fff4c8', emissive: '#5a4a20' }), 0, .006, 0, 10)); // little stand
+    d.add(C(.007, .006, .12, skin, 0, .07, 0, 5)); // standing leg (en pointe)
+    const leg2 = C(.007, .006, .11, skin, .03, .14, 0, 5); leg2.rotation.z = 1.2; d.add(leg2); // raised leg (arabesque)
+    d.add(C(.012, .075, .035, pink, 0, .14, 0, 9)); // tutu
+    d.add(C(.018, .013, .07, pink, 0, .19, 0, 6)); // bodice
+    d.add(S(.022, skin, 0, .245, 0)); d.add(S(.012, mat({ color: '#6a4a3a' }), 0, .262, -.012)); // head + bun
+    const armL = C(.005, .005, .085, skin, -.035, .25, 0, 4), armR = armL.clone(); armL.rotation.z = -.7; armR.position.x = .035; armR.rotation.z = .7; d.add(armL, armR); // arms raised in a circle
+    if (anim){ const sp = o.spin ?? 1.4, ph = rng() * 6; anim.push(t => { d.rotation.y = t * sp + ph; d.position.y = Math.sin(t * 2 + ph) * .004; }); }
+    if (o.scale == null && o.type === 'ballerina') g.scale.setScalar(4);
+    return g; },
+  sneakers(o = {}){ const g = new THREE.Group(); const sole = mat({ color: '#fff8f0' }), up = mat({ color: o.color || '#8ab8f0' }), lace = mat({ color: '#ffffff' });
+    for (const sx of [-.07, .07]){ const s = new THREE.Group(); s.add(B(.09, .025, .2, sole, 0, .012, 0)); s.add(B(.08, .05, .17, up, 0, .05, -.01)); s.add(B(.08, .04, .07, up, 0, .09, .05)); s.add(B(.05, .006, .06, lace, 0, .078, -.02)); s.position.x = sx; s.rotation.y = sx * 2; g.add(s); }
+    g.add(B(.32, .004, .26, mat({ color: '#9ad0e0', opacity: .5 }), 0, .002, 0)); return g; }, // small, wet, child-size
+  cardbox(o = {}){ const g = new THREE.Group(); const m = mat({ color: '#d8b888' }); g.add(B(.5, .34, .4, m, 0, .17, 0)); const f1 = B(.5, .02, .2, m, 0, .35, -.25); f1.rotation.x = .9; g.add(f1); const f2 = f1.clone(); f2.position.z = .25; f2.rotation.x = -.9; g.add(f2);
+    g.add(B(.26, .08, .005, mat({ color: '#fffaf0' }), 0, .22, .202)); g.add(B(.18, .012, .006, mat({ color: '#506090' }), 0, .225, .204)); return g; }, // a name label on the side
+  bench(o = {}){ const g = new THREE.Group(); const w = mat({ tex: 'wood', color: o.color || '#d8c0e0' }), leg = mat({ color: '#6a5a7a' }); g.add(B(1.6, .06, .42, w, 0, .45, 0)); g.add(B(1.6, .36, .05, w, 0, .7, -.2));
+    for (const x of [-.7, .7]) g.add(B(.06, .45, .38, leg, x, .225, 0)); return g; },
+  musicbox(o = {}, rng = Math.random, anim){ const g = new THREE.Group(); g.add(B(.5, .3, .35, mat({ tex: 'wood', color: '#ffd8e8' }), 0, .15, 0)); const lid = B(.5, .04, .35, mat({ color: '#ffb8d0' }), 0, .45, -.15); lid.rotation.x = -1.1; g.add(lid); const s = glowSprite('#fff0c0', .7); s.material.opacity = .45; s.position.y = .5; g.add(s); const bl = M.ballerina({ spin: 1.2 }, rng, anim); bl.position.set(0, .3, .04); g.add(bl); return g; },
   lamppost(o){ const g = new THREE.Group(); g.add(C(.05, .07, 3.2, mat({ color: '#606080' }), 0, 1.6, 0), S(.22, mat({ color: '#fff4d0', emissive: '#ffe0a0' }), 0, 3.3, 0)); const s = glowSprite(o.color || '#ffe8b0', 2.2); s.position.y = 3.3; g.add(s); return g; },
   sign(o){ const g = new THREE.Group(); g.add(C(.04, .04, 1.6, mat({ color: '#ffffff' }), 0, .8, 0), B(1, .5, .05, mat({ color: o.color || '#ffe8a8' }), 0, 1.6, 0)); return g; },
   orb(o, rng, anim){ const g = new THREE.Group(); const s = glowSprite(o.color || '#fff0ff', o.size || 1.2); g.add(s); g.add(S(.08, mat({ color: '#ffffff', emissive: '#ffffff' }), 0, 0, 0, 0)); const by = o.y || 1.2, ph = rng() * 6; anim.push(t => { g.position.y = by + Math.sin(t * 1.3 + ph) * .2; }); return g; },
