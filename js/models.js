@@ -2,6 +2,7 @@
 import * as THREE from '../vendor/three.module.js';
 import { mat } from './render.js';
 import { tex } from './textures.js';
+import { PM } from './propmodels.js';
 const B = (w, h, d, m, x = 0, y = 0, z = 0) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); return o; };
 const S = (r, m, x = 0, y = 0, z = 0, det = 1) => { const o = new THREE.Mesh(new THREE.IcosahedronGeometry(r, det), m); o.position.set(x, y, z); return o; };
 const C = (rt, rb, h, m, x = 0, y = 0, z = 0, seg = 7) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), m); o.position.set(x, y, z); return o; };
@@ -103,4 +104,4 @@ function wander(g, o, rng, anim, extra, fly){
     if (fly) p.y = (o.y || 1.5) + Math.sin(t * 1.2 + a) * .2;
     extra && extra(t); });
 }
-export function buildModel(o, rng, anim){ const f = M[o.type] || M[o.model]; return f ? f(o, rng, anim) : null; }
+export function buildModel(o, rng, anim){ const f = M[o.type] || PM[o.type] || M[o.model] || PM[o.model]; return f ? f(o, rng, anim) : null; }

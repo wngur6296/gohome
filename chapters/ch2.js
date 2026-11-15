@@ -1,3 +1,4 @@
+const PI = Math.PI;
 export default {
   id: 'ch2', order: 2, strangeness: .2, title: '거울 바다', subtitle: '두 번째 꿈', art: 'ch2', music: 'ch2',
   intro: ['발밑에 하늘이 비친다. 물에 비친 얼굴은 아이의 얼굴이다.', '문들은 어디로든 이어져 있다. 돌아가는 문만 빼고.'],
@@ -41,7 +42,32 @@ export default {
     { type: 'platform', style: 'stone', x: 0, y: 2.2, z: -79, w: 4, d: 3.6, h: .5, color: '#f4eef8' },
     { type: 'text', x: 0, z: -64, r: 2.5, text: '문들이 물 위에 누워 계단이 되었다.', mood: [1, 1] },
     { type: 'door', id: 'goal2', x: 0, y: 2.2, z: -80.2, glow: '#fff4d8', goal: true, r: 1.6, text: '수평선 끝에 빛나는 문이 있다.' },
+    // ---- v7: things to touch ----
+    { type: 'radio', x: 4, z: -7, reflect: true, act: { kind: 'play', lines: ['…오늘의 날씨입니다. 하늘은 맑고, 바다는 하늘을 비추겠습니다.', '…내일도 맑겠습니다. 당신은 내일도 어른이겠습니다.', '…어린이 여러분은 해가 지기 전에 집에 들어가세요.'], mood: [1, 1] } },
+    { type: 'umbrella', x: -5, z: -9, reflect: true, act: { kind: 'open', label: '펴기', lines: ['우산을 펴자, 우산 아래에만 비가 내린다.', '따뜻한 비다. 어릴 때 장화를 신고 일부러 웅덩이를 밟던 그 비.'], mood: [2, 0], empty: '우산 아래에서 빗소리가 들린다. 비는 보이지 않는다.' } },
+    { type: 'mirror', x: 12, z: -12, rot: -.6, w: 1, h: 1.9, act: { kind: 'mirror', lines: ['물에 비친 얼굴은 어른인데, 거울 속 얼굴은 아이다.', '어느 쪽이 진짜냐고 묻자, 거울 속 아이가 고개를 갸웃한다.'], mood: [1, 2] } },
+    { type: 'bottle', x: -17, z: -19, act: { kind: 'pickup', item: 'letter', name: '병 속 편지', icon: '✉', lines: ['물 위에 병이 떠 있다. 안에 편지가 들어 있다.', '봉투에 어린 내 글씨로 "미래의 나에게"라고 적혀 있다.'] } },
+    { type: 'mailbox', x: 15, z: -40, wander: .01, speed: 0, color: '#ffb0c0', reflect: true, act: { kind: 'use', label: '넣기', need: 'letter', needText: '우체통 입구가 조금 열려 있다. 보낼 편지가 있다면…', lines: ['편지를 넣자, 우체통이 천천히 물속으로 가라앉는다.', '답장은 어릴 적 주소로 간다고 한다. 그 집에는 아직 누가 살고 있을까.'], secret: 'ch2_letter', hideSelf: true, mood: [2, 1] } },
+    { type: 'frag', x: 28, y: 1.1, z: -27, act: { kind: 'frag', frag: 'ch2_swing', fragText: '그네를 가장 높이 밀어 주던 손. 하늘에 발이 닿을 것 같다고 소리를 질렀다.' } },
+    { type: 'frag', x: -43, y: 1.1, z: -12, act: { kind: 'frag', frag: 'ch2_shell', fragText: '바닷가에서 주운 소라 껍데기. 귀에 대면 파도 소리 대신 나를 부르는 소리가 들렸다.' } },
+    { type: 'doll', x: -20, z: -30, scale: 2, follow: { min: 5, speed: .4, leash: 14 }, act: { kind: 'lines', r: 1.8, lines: ['돌아보면 인형은 멈춰 있다. 물 위를 미끄러지듯 따라온 것 같다.', '어릴 때 바닷가에 두고 온 인형이다. 아직 나를 기다리고 있었다.'], mood: [1, 2] } },
+    { type: 'wallswitch', x: -40, y: 1.3, z: -9.58, act: { kind: 'toggle', label: '스위치', flag: 'dark', dark: true, lines: ['스위치를 내리자 바다 전체가 밤이 되었다. 물 위에 빛나는 글씨가 떠오른다.'], offLines: ['다시 낮이 되었다. 아무 일도 없었던 것처럼.'], mood: [0, 2] } },
+    { type: 'walltext', x: -28, y: .05, z: -18, w: 7, flat: true, write: '여기까지 와 줘서 고마워', ink: '#e8fff8', showIf: 'dark' },
+    { type: 'walltext', x: 0, y: .05, z: -34, w: 6, flat: true, write: '돌아가는 문은 없어', ink: '#e8fff8', showIf: 'dark' },
+    { type: 'musicbox', x: 8, z: -50, scale: 2, reflect: true, act: { kind: 'toy', lines: ['물 위의 오르골. 발레리나가 물결을 따라 돈다.', '태엽을 감지 않았는데도 노래가 멈추지 않는다.'], mood: [2, 1] } },
+    { type: 'rotary', x: -9, z: -42, reflect: true, act: { kind: 'ring', ringText: '바다 한가운데에서 전화벨이 울린다.', lines: ['"…엄마야. 너 목소리가 왜 그렇게 어른 같니?"', '"감기 걸렸어? 따뜻하게 입고 다녀."', '"바다에 너무 오래 있지 말고."'], mood: [2, 1] } },
+    // PUZZLE → HIDDEN ROOM: ring the bells from the smallest to the largest
+    { type: 'sign', x: 3, z: -4, color: '#e8f8ff', act: { kind: 'lines', label: '읽기', lines: ['표지판: "작은 종부터 차례로. 그러면 물 밑의 길이 열려요."'] } },
+    { type: 'bell', x: -3, z: -25, size: 1.4, reflect: true, act: { kind: 'step', label: '울리기', puzzle: 'bells', key: 'l', pitch: .75 } },
+    { type: 'bell', x: 6, z: -30, size: .7, reflect: true, act: { kind: 'step', label: '울리기', puzzle: 'bells', key: 's', pitch: 1.5 } },
+    { type: 'bell', x: -6, z: -37, size: 1, reflect: true, act: { kind: 'step', label: '울리기', puzzle: 'bells', key: 'm', pitch: 1 } },
+    { type: 'room', x: 300, z: 0, w: 8, d: 8, height: 3, floor: 'pool', wallTex: 'water', ceilTex: 'water', ceilColor: '#c8f0ff' },
+    { type: 'bell', x: 300, z: -2, size: 1.6, color: '#c8f0ff' }, { type: 'teddy', x: 298.5, z: -2.5, color: '#b8d8e8' },
+    { type: 'orb', x: 301.5, z: -1.5, y: 1.2, color: '#d0f8ff', r: 1, room: 'ch2_bells', text: '기억의 조각 · 물 밑 종탑. 학교 종이 울리면 집에 갈 시간이었다. 종이 울릴 때마다 가슴이 두근거렸다.' },
+    { type: 'door', x: 300, z: 3.88, rot: PI, glow: '#e0f8ff', r: 1, warp: { x: 0, z: -18, yaw: 0 }, text: '물 위로.' },
   ],
+  puzzles: [{ id: 'bells', mode: 'order', keys: ['s', 'm', 'l'], wrong: '종소리가 물속으로 흩어진다. 처음부터 다시.', progress: ['종소리가 물 위에 동그랗게 번진다.', '두 번째 종소리. 물빛이 조금 어두워진다.'],
+    reward: { text: '세 번째 종이 울리자, 수면 아래로 계단이 생겼다…', room: 'ch2_bells', warp: { x: 300, z: 2.5, yaw: 0 }, warpDelay: 2800 } }],
   mutations: [
     { when: { dayMod: [2, 0] }, add: [{ type: 'whale', orbit: 40, y: 16, cz: -40, speed: .04 }], text: '하늘 위로 무언가 커다란 것이 헤엄친다.' },
     { when: { dayMod: [3, 1] }, palette: { skyTop: '#c8a8ff', skyMid: '#ffd8b8', fog: '#f4dccc' }, hueDrift: -.2 },

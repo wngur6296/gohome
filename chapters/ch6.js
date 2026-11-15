@@ -1,4 +1,5 @@
 // Chapter 6 — 뒤집힌 거실. Upside-down furniture, doors to nowhere, a room that loops into itself.
+const PI = Math.PI;
 export default {
   id: 'ch6', order: 6, strangeness: .7, title: '뒤집힌 거실', subtitle: '여섯 번째 꿈', art: 'ch6', music: 'ch6',
   intro: ['거실이다. 우리 집 거실과 거의 똑같다.', '거의. 어른이 되어 돌아온 집은 늘 조금씩 뒤집혀 보였다.'],
@@ -32,7 +33,34 @@ export default {
     // JUMP: an upside-down sofa blocks the way out
     { type: 'box', x: 0, z: -8, w: 1.8, h: .8, d: .7, color: '#f0b8c8', tex: 'carpet' },
     { type: 'door', id: 'goal6', x: 0, z: -10.5, goal: true, r: 1.2, loop: { times: 3, warp: { x: 0, z: 5.5, yaw: 0 }, sayFirst: true, texts: ['문을 열고 나왔는데, 같은 거실이다.', '소파가 조금 더 낮게 내려와 있다.', '이번엔… 바깥 공기가 느껴진다.'] }, text: '문밖으로 차가운 밤바람. 기차 소리가 아주 멀리서.' },
+    // ---- v7: things to touch ----
+    { type: 'wallswitch', x: -7.86, y: 1.3, z: 4.8, rot: PI / 2, act: { kind: 'toggle', label: '스위치', flag: 'dark', dark: true, lines: ['불을 껐다. 거실이 갑자기 더 넓어진 것 같다. 벽에 야광 글씨가 보인다.'], offLines: ['불을 켰다. 가구들은 여전히 천장에 붙어 있다.'], mood: [0, 2] } },
+    { type: 'walltext', x: 7.86, y: 1.6, z: 5.3, rot: -PI / 2, w: 2, write: '다녀왔습니다', ink: '#d8ffe0', showIf: 'dark' },
+    { type: 'walltext', x: -5, y: 2.2, z: -6.86, w: 1.8, write: '어서 와', ink: '#d8ffe0', showIf: 'dark' },
+    { type: 'radio', x: -5.5, z: -5.5, rot: .4, act: { kind: 'play', lines: ['…오늘의 사연입니다. "어른이 됐는데도 밤마다 불을 켜고 잡니다."', '"…그래도 괜찮을까요?"', '…괜찮습니다. 다음 곡은 자장가입니다.'], mood: [2, 1] } },
+    { type: 'dresser', x: 6.6, z: -5.5, rot: -PI / 2, act: { kind: 'open', lines: ['서랍 속에 리모컨이 있다. 건전지 뚜껑이 테이프로 감겨 있다.'], give: 'remote', item: 'remote', name: '리모컨', icon: '📺', empty: '서랍 안에는 고무줄과 건전지 하나뿐이다.' } },
+    { type: 'tv', x: -3.4, z: -6.3, act: { kind: 'use', label: '켜기', need: 'remote', needText: '바닥에 놓인 TV. 버튼이 없다. 리모컨이 있어야 할 것 같다.', tone: 'static', lines: ['리모컨을 누르자, 화면에 어린 내가 나온다.', '화면 속 아이가 묻는다. "거기는 지금 몇 시야?"', '"…여기는 아직 저녁 일곱 시야. 다들 밥 먹으러 오래."'], secret: 'ch6_remote', mood: [1, 2] } },
+    { type: 'rotary', x: 2, z: 5, act: { kind: 'ring', ringText: '거실 바닥에 놓인 전화가 울린다.', lines: ['"…여보세요. 거기 우리 집 맞죠?"', '"저 거기 살았었어요. 아주 오래전에요."', '"…혹시 제 방, 아직 그대로 있어요?"'], mood: [1, 2] } },
+    { type: 'mirror', x: 7.86, y: .4, z: 1.6, rot: -PI / 2, w: 1, h: 1.8, reflection: { face: true }, act: { kind: 'mirror', lines: ['거울 속 거실은 똑바로 서 있다. 그쪽이 진짜 같다.', '거울 속 아이는 소파에 앉아 TV를 보고 있다. 나는 서 있는데.'], mood: [0, 2] } },
+    { type: 'rug', x: 0, z: 3.4, w: 2.4, d: 1.6, act: { kind: 'open', label: '들추기', r: 1.6, lines: ['양탄자를 들추자 바닥에 크레파스 낙서가 있다. "여기는 내 자리"'], frag: 'ch6_rug', fragText: '거실 양탄자 밑에 몰래 그린 낙서. "여기는 내 자리." 들킬까 봐 조마조마했는데, 아무도 들추지 않았다.' } },
+    { type: 'child', x: -5.5, z: 2.5, h: .8, watch: .25, face: true, act: { kind: 'lines', lines: ['아이가 천장의 TV를 올려다본다. "저거 언제 끝나?"', '"엄마 아빠는 아직 안 왔어. 같이 기다릴래?"'], mood: [1, 2] } },
+    // PUZZLE → HIDDEN ROOM: hang all three crooked photos straight
+    { type: 'photo', x: 5.5, y: 1.6, z: -6.86, tilt: .5, act: { kind: 'step', label: '바로 걸기', puzzle: 'frames', key: 'a', lines: ['액자를 바로 걸었다. …아니, 다시 기울었나?'] } },
+    { type: 'photo', x: -7.86, y: 1.7, z: 1.5, rot: PI / 2, tilt: -.6, color: '#e8f0f8', act: { kind: 'step', label: '바로 걸기', puzzle: 'frames', key: 'b', lines: ['사진 속 사람들이 조금 더 가까이 붙어 선 것 같다.'] } },
+    { type: 'photo', x: 4, y: 1.5, z: 6.86, rot: PI, tilt: .7, color: '#f8e8f0', act: { kind: 'step', label: '바로 걸기', puzzle: 'frames', key: 'c', lines: ['액자 뒤에서 오래된 테이프 냄새가 난다.'] } },
+    { type: 'cup', x: 4.6, z: 2.5, scale: 5, visitAlts: [[-4, -2, 1], [3, -4, 2]], act: { kind: 'lines', r: 1.6, lines: ['내 키만 한 컵. 어릴 때 쓰던 컵이다. 손잡이에 이빨 자국이 있다.'], mood: [1, 1] } },
+    { type: 'frag', x: 5, y: 1.1, z: 5.6, act: { kind: 'frag', frag: 'ch6_slippers', fragText: '현관에 나란히 놓인 가족의 슬리퍼. 내 것만 작았다. 이제는 그 슬리퍼에 발가락도 들어가지 않는다.' } },
+    // ambient: furniture that rearranges every time the room loops
+    { type: 'chair', x: -1, z: 3, flip: true, y: 3.4, loopAlts: [[2, -3, 1, 3.4], [-4, 1, 2, 3.4], [5, 3, 3, 3.4]] },
+    { type: 'walltext', x: 0, y: 2.6, z: 6.86, rot: PI, w: 2, write: '아까도 왔었지?', ink: '#8a6a9a', appear: true },
+    // HIDDEN ROOM (photos): the living room under the living room, right way up
+    { type: 'room', x: 300, z: 0, w: 9, d: 8, height: 3, floor: 'wood', wallTex: 'wallpaper', wallColor: '#ffe8e0', ceilColor: '#fff0e8' },
+    { type: 'lamp', x: 300, y: 2.95, z: 0, light: true, color: '#ffd8a8', intensity: 5 }, { type: 'table', x: 300, z: -1.5 }, { type: 'chair', x: 299, z: -.6, rot: PI }, { type: 'chair', x: 301, z: -.6, rot: PI }, { type: 'cake', x: 300, y: .79, z: -1.5, candles: 7 },
+    { type: 'orb', x: 302.5, z: -2.5, y: 1.2, color: '#fff0d8', r: 1, room: 'ch6_basement', text: '기억의 조각 · 똑바로 선 거실. 생일날 불을 끄고 촛불만 켜 두었던 밤. 노래가 끝날 때까지 소원을 고르지 못했다.' },
+    { type: 'door', x: 300, z: 3.88, rot: PI, glow: '#fff', r: 1, warp: { x: 0, z: 4, yaw: 0 }, text: '거꾸로 된 거실로.' },
   ],
+  puzzles: [{ id: 'frames', mode: 'all', keys: ['a', 'b', 'c'], doneText: '액자들은 이제 똑바로 걸려 있다.',
+    reward: { text: '세 액자가 모두 바로 걸리자, 벽 너머에서 딸깍 소리가 났다. 바닥 밑에서 따뜻한 바람이 분다…', room: 'ch6_basement', warp: { x: 300, z: 2.5, yaw: 0 }, warpDelay: 3200 } }],
   mutations: [
     { when: { dayMod: [3, 0] }, palette: { fog: '#e0d0c8', skyMid: '#f0d8c8' }, hueDrift: -.25 },
     { when: { dayMin: 6 }, add: [{ type: 'watcher', x: 5, z: 4, h: 1.2, watch: .3, color: '#f8e8e8', r: 1, text: '작은 형체. 내 어릴 적 키와 똑같다.', mood: [1, 2] }] },

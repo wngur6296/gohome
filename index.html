@@ -19,11 +19,14 @@
 <div id="touch"></div>
 <div id="joy"><div></div></div>
 <button id="jumpbtn" aria-label="점프">⤒<small>점프</small></button>
+<button id="actbtn" aria-label="만지기">✋<span>만지기</span></button>
+<div id="reticle"></div>
 <button id="soundbtn">🔈 소리 켜기<small>무음 스위치를 꺼 주세요</small></button>
 <div id="hud">
   <div id="hudtop"><div><div id="day"></div><div id="chapname"></div></div><button id="pausebtn" aria-label="일시정지">☾</button></div>
+  <div id="inv"></div>
   <div id="say"></div>
-  <div id="hint">왼쪽: 걷기 · 오른쪽: 둘러보기 · 버튼: 점프</div>
+  <div id="hint">왼쪽: 걷기 · 오른쪽: 둘러보기 · ✋: 만지기 · ⤒: 점프</div>
 </div>
 <div id="toast"></div>
 
@@ -31,13 +34,14 @@
   <div id="titlebg"></div><canvas id="particles"></canvas>
   <div class="titlebox"><h1 id="logo">Go Home</h1><p class="sub">집으로 가는 꿈</p></div>
   <p id="titlehint">화면을 눌러 꿈속으로</p>
-  <p class="foot">🎧 이어폰을 권장해요</p>
+  <p class="foot">🎧 이어폰을 끼면 더 좋아요</p>
 </section>
 
 <section id="menu" class="screen">
   <div class="menuwrap">
     <header><h2>꿈 일기</h2><div id="menuday"></div><div id="secrets"></div></header>
     <div id="chapters"></div>
+    <div class="menurow"><button id="menujournal" class="wide">❀ 기억 일지</button><button id="menuendings" class="wide">✦ 엔딩 목록</button></div>
     <button id="menuload" class="wide">기록 · 불러오기 · 백업</button>
     <details class="opts"><summary>설정</summary>
       <label><span>레트로 화질 (PS1 모드)</span><input type="checkbox" id="optps1"></label>
@@ -49,7 +53,7 @@
 </section>
 
 <section id="pause" class="screen dim">
-  <div class="panel"><h2>잠시 멈춤</h2><button id="resume">계속 꿈꾸기</button><button id="savebtn">기록하기</button><button id="wake">깨어나기</button><button id="tomenu" class="ghost">꿈 일기로</button></div>
+  <div class="panel"><h2>잠시 멈춤</h2><button id="resume">계속 꿈꾸기</button><button id="savebtn">기록하기</button><button id="pausejournal">기억 일지</button><button id="wake">깨어나기</button><button id="tomenu" class="ghost">꿈 일기로</button></div>
 </section>
 
 <section id="slots" class="screen dim">
@@ -64,6 +68,21 @@
 
 <section id="mood" class="screen dim">
   <div class="panel wide"><small>오늘의 꿈</small><h2 id="moodday"></h2><canvas id="moodcv"></canvas><p id="moodscenes"></p><p id="moodend"></p><p id="moodhint"></p><button id="moodnext">다시 잠들기</button></div>
+</section>
+
+<section id="journal" class="screen dim">
+  <div class="panel wide scroll"><h2>기억 일지</h2><div id="journalsum"></div><div id="journalinv"></div><div id="journallist"></div><button id="journalback" class="ghost">돌아가기</button></div>
+</section>
+
+<section id="endings" class="screen dim">
+  <div class="panel wide scroll"><h2>엔딩 목록</h2><div id="endingsum"></div><div id="endinglist"></div><button id="endingsback" class="ghost">돌아가기</button></div>
+</section>
+
+<section id="ending" class="screen">
+  <canvas id="endcv"></canvas>
+  <p id="endtext"></p>
+  <div id="endtitle"></div>
+  <button id="endnext">계속</button>
 </section>
 
 <script type="module" src="js/main.js"></script>

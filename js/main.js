@@ -9,14 +9,19 @@ import { ASSETS } from './assets.js';
 import { strangeLayer, glitchText, DEFAULT_WHISPERS } from './strange.js';
 import CHAPTERS from '../chapters/manifest.js';
 import { moodProfile, MOODS } from './moodfx.js';
+import { createInteract, scanChapters } from './interact.js';
+import { ENDINGS, drawEnding } from './endings.js';
 
 const $ = s => document.querySelector(s);
 const chapters = new Map(CHAPTERS.map(c => [c.id, c]));
 // Totals are derived from chapter data, so new chapters automatically count.
 const allObjs = c => [...c.objects, ...(c.mutations || []).flatMap(m => m.add || [])];
 const GLOBAL_SECRETS = ['title7', 'still'];
-const SECRET_IDS = [...new Set([...CHAPTERS.flatMap(c => allObjs(c).filter(o => o.secret).map(o => o.secret)), ...GLOBAL_SECRETS])];
-const ROOM_IDS = [...new Set(CHAPTERS.flatMap(c => allObjs(c).filter(o => o.room).map(o => o.room)))];
+const SECRET_IDS = [...new Set([...CHAPTERS.flatMap(c => allObjs(c).flatMap(o => [o.secret, o.act?.secret, o.act?.after?.secret]).filter(Boolean)), ...CHAPTERS.flatMap(c => (c.puzzles || []).map(p => p.reward?.secret).filter(Boolean)), ...GLOBAL_SECRETS])];
+const ROOM_IDS = [...new Set(CHAPTERS.flatMap(c => allObjs(c).filter(o => o.room || o.act?.room).map(o => o.room || o.act.room)).concat(CHAPTERS.flatMap(c => (c.puzzles || []).map(p => p.reward?.room).filter(Boolean))))];
+const { frags: FRAGS, items: ITEMS } = scanChapters(CHAPTERS);
+// memory text for each hidden room (the orb inside it) — shown in the journal
+const ROOM_TEXT = Object.fromEntries(CHAPTERS.flatMap(c => allObjs(c).filter(o => o.type === 'orb' && o.room && o.text).map(o => [o.room, { ch: c.id, text: o.text.replace(/^기억의 조각 · /, '') }])));
 const S = save.load();
 const state = new GameState();
 const net = new LocalAdapter();
@@ -24,8 +29,13 @@ const audio = new AudioManager(); audio.setVolume(S.settings.volume);
 const renderer = new Renderer($('#gl'));
 renderer.setPS1(S.settings.ps1);
 const input = new InputManager($('#touch'), $('#joy'), $('#jumpbtn')); input.sens = 0.0055 * S.settings.sens;
-let mode = 'title', things = [], fading = false, msgTimer = 0, dreamStart = 0, stillTime = 0, stillFired = false, whisperT = 40, titleGlitchT = 3, autosaveT = 30, curCh = null;
+let ambientT = 45, mode = 'title', things = [], fading = false, msgTimer = 0, dreamStart = 0, stillTime = 0, stillFired = false, whisperT = 40, titleGlitchT = 3, autosaveT = 30, curCh = null;
 const dream = { calm: 0, strange: 0, scenes: [] };
+const itemName = id => ITEMS[id] ? `${ITEMS[id].icon} ${ITEMS[id].name}` : id;
+function renderInv(){ const el = $('#inv'); el.innerHTML = (S.inv || []).filter(i => ITEMS[i]).map(i => `<span>${itemName(i)}</span>`).join(''); }
+const interact = createInteract({ S, save, renderer, dream, get audio(){ return audio; }, strange: () => strangeNow(), sceneId: () => state.sceneId,
+  say: (t, d) => say(t, d), toast: t => toast(t), warp: w => warp(w), foundSecret: id => foundSecret(id), foundRoom: id => foundRoom(id), foundFrag: id => foundFrag(id),
+  itemName, renderInv, ending: (id, t) => endDream({ ...(t || {}), goal: true, ending: id }) });
 
 // ---- networking hook: mirror replicated events to the adapter (no-op locally)
 bus.on('*', (p, msg) => { if (msg.meta.local && REPLICATED.includes(msg.type)) net.send({ type: msg.type, payload: p }); });
@@ -35,7 +45,8 @@ net.connect().then(({ peerId }) => state.addPlayer(new Player(peerId, true)));
 // ---- helpers
 const rngFrom = seed => { let s = (Math.abs(seed * 2654435761) % 2147483647) || 1; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
 const strangeNow = () => curCh?.strangeness || 0;
-function say(text, dur = 4.5){ const el = $('#say'); el.textContent = glitchText(text, strangeNow()); el.classList.add('on'); msgTimer = dur; }
+// Subtitles are always shown exactly as written (no letter glitches — they read like typos); strangeness shows as a soft chromatic shimmer instead.
+function say(text, dur = 4.5){ const el = $('#say'); el.textContent = text; el.style.setProperty('--sh', strangeNow().toFixed(2)); el.classList.toggle('uncanny', strangeNow() > .4); el.classList.add('on'); msgTimer = dur; }
 function fadeTo(color, v, ms){ return new Promise(res => { const u = renderer.postU; const start = u.uFade.value, t0 = performance.now(); if (color) u.uFadeColor.value.set(color);
   (function f(){ const k = Math.min(1, (performance.now() - t0) / ms); const e = k * k * (3 - 2 * k); u.uFade.value = start + (v - start) * e; if (k < 1) requestAnimationFrame(f); else res(); })(); }); }
 function show(id){ document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); }
@@ -63,10 +74,12 @@ async function loadScene(id, spawnName, { first = false, at = null } = {}){
   const rng = rngFrom(S.day * 31 + visits * 7 + id.length * 13);
   const mut = applyMutations(ch, S.day, rng);
   mut.objects.push(...strangeLayer(ch, rng));
-  const chView = { ...ch, palette: { ...ch.palette, ...mut.palette } };
-  state.clearScene(); state.sceneId = id; state.bounds = boundsFor(ch, [...ch.objects, ...mut.objects]);
+  // rooms that rearrange on revisit: `visitAlts:[[x,z,rot]]` picks a different spot each visit
+  const objects = ch.objects.map(o => { if (!o.visitAlts) return o; const k = (visits - 1) % (o.visitAlts.length + 1); if (!k) return o; const a = o.visitAlts[k - 1]; return { ...o, x: a[0], z: a[1], rot: a[2] ?? o.rot }; });
+  const chView = { ...ch, objects, palette: { ...ch.palette, ...mut.palette } };
+  state.clearScene(); state.sceneId = id; state.bounds = boundsFor(ch, [...objects, ...mut.objects]);
   mut.mood = moodProfile(S.moods); const built = renderer.build(chView, rng, mut); state.colliders = built.colliders; state.grounds = built.grounds; state.ceilings = built.ceilings || []; // furniture tops too close to a ceiling can't be stood on (no head through the ceiling)
-  for (const c of state.colliders) if (c.maxY < 50) for (const ce of state.ceilings) if (c.maxX > ce.minX && c.minX < ce.maxX && c.maxZ > ce.minZ && c.minZ < ce.maxZ && c.maxY + 1.7 > ce.y){ c.maxY = 99; break; } state.killY = ch.killY ?? -6; things = built.things.map(t => ({ ...t, used: false, acc: 0, count: 0 }));
+  for (const c of state.colliders) if (c.maxY < 50) for (const ce of state.ceilings) if (c.maxX > ce.minX && c.minX < ce.maxX && c.maxZ > ce.minZ && c.minZ < ce.maxZ && c.maxY + 1.7 > ce.y){ c.maxY = 99; break; } state.killY = ch.killY ?? -6; things = built.things.map(t => ({ ...t, used: false, acc: 0, count: 0 })); interact.reset(things, ch); renderInv();
   const p = state.localPlayer; const sp = at || (spawnName && ch.spawns?.[spawnName]) || ch.spawn;
   placePlayer(p, sp.x, sp.z, sp.yaw || 0); p.pitch = 0;
   dream.scenes.push(id); if (!ch.hidden) save.unlock(id);
@@ -104,7 +117,7 @@ async function warp(w, quick){
   if (fading) return; fading = true; input.reset(); const p = state.localPlayer;
   if (!quick){ input.enabled = false; audio.sfx('link', .25, .7); await fadeTo(fadeColor(), 1, 1100); }
   placePlayer(p, w.x, w.z, w.yaw);
-  for (const th of things) if (Math.hypot(th.x - w.x, th.z - w.z) < (th.r || 0) + 1) th.used = true; // don't re-trigger on arrival
+  for (const th of things) if (Math.hypot(th.x - w.x, th.z - w.z) < (th.r || 0) + 1){ th.used = true; th.rearmAfter = true; } // don't re-trigger on arrival (re-arms once you step away)
   if (!quick){ await sleep(250); await fadeTo(null, 0, 1300); input.enabled = true; }
   fading = false;
 }
@@ -114,20 +127,22 @@ function touch(t){
   // impossible architecture: `loop:{times, warp, texts}` sends you back silently N times before the thing acts normally
   if (t.loop && t.count < t.loop.times){ t.count++; t.used = false; t.rearm = true; const lt = t.loop.texts || ['…아까 그 길이다.', '같은 곳이다. 분명히.', '세어 보는 걸 그만두자.'];
     if (t.count > 1 || t.loop.sayFirst) say(lt[(t.count - 1) % lt.length], 3.5); dream.strange += .5;
-    if (t.loop.warp) warp(t.loop.warp, true); else { const p = state.localPlayer; p.pos.x += t.loop.dx || 0; p.pos.z += t.loop.dz || 0; }
+    renderer.onLoop(); if (t.loop.warp) warp(t.loop.warp, true); else { const p = state.localPlayer; p.pos.x += t.loop.dx || 0; p.pos.z += t.loop.dz || 0; }
     return; }
   if (t.mood){ dream.calm += t.mood[0]; dream.strange += t.mood[1]; }
   if (t.text) say(t.text, 5.5);
   if (t.secret) foundSecret(t.secret);
   if (t.room) foundRoom(t.room);
   if (!t.secret && !t.room && !t.goal && !t.link && !t.warp) audio.sfx('chime', .25, (.9 + Math.random() * .2) * (1 - strangeNow() * .25));
-  if (t.goal) return setTimeout(() => endDream(t), 1800);
+  if (t.goal || t.ending) return setTimeout(() => endDream({ ...t, goal: true }), 1800);
   if (t.warp) setTimeout(() => warp(t.warp), t.text ? 1700 : 300);
   else if (t.link) setTimeout(() => link(t.link.to, t.link.spawn), t.secret ? 2600 : 1600);
   if (t.rearm !== false && (t.text && !t.link && !t.goal && !t.warp && !t.secret && !t.room)) t.rearmAfter = true;
 }
 function foundSecret(id){ if (save.secret(id)){ audio.sfx('secret_found', .5); setTimeout(() => toast(`✧ 비밀을 발견했다 (${S.secrets.filter(s => SECRET_IDS.includes(s)).length}/${SECRET_IDS.length})`), 1200); bus.emit('secret:found', { id }); } }
 function foundRoom(id){ if (save.room(id)){ audio.sfx('secret_found', .45, .8); setTimeout(() => toast(`◇ 숨겨진 방을 찾았다 (${S.rooms.filter(r => ROOM_IDS.includes(r)).length}/${ROOM_IDS.length})`), 1400); bus.emit('secret:found', { id, room: true }); } }
+function foundFrag(id){ if (S.frags.includes(id)) return; S.frags.push(id); save.write(); audio.tone('frag', .9); const n = S.frags.filter(f => FRAGS.some(x => x.id === f)).length;
+  setTimeout(() => toast(`❀ 기억의 조각 (${n}/${FRAGS.length}) · 일지에 적었다`), 900); bus.emit('secret:found', { id, frag: true }); }
 function toast(t){ const el = $('#toast'); el.textContent = t; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); }
 
 async function endDream(goalThing){
@@ -141,10 +156,48 @@ async function endDream(goalThing){
   await fadeTo('#fffaf2', 1, 2200);
   const tot = Math.max(1, dream.calm + dream.strange);
   const pt = { day: S.day + 1, x: Math.max(-1, Math.min(1, (dream.calm - dream.strange * .5) / tot * 1.4)), y: Math.max(-1, Math.min(1, (dream.strange - dream.calm * .4) / tot * 1.4)), scenes: [...new Set(dream.scenes)] };
-  S.moods.push(pt); S.day++; save.write(); mode = 'mood';
-  showMood(pt, ending, goalThing && ch.endText);
+  S.moods.push(pt); S.day++; save.write();
+  if (ending){ const id = goalThing.ending || pickEnding(); const isNew = !S.endings.includes(id); if (isNew){ S.endings.push(id); save.write(); }
+    fading = false; await playEnding(id, isNew); const e = ENDINGS.find(x => x.id === id); mode = 'mood'; showMood(pt, ending, `엔딩 ${ENDINGS.indexOf(e) + 1} · ${e.title}`); return; }
+  mode = 'mood'; showMood(pt, ending, goalThing && ch.endText);
   fading = false;
 }
+// ---- endings (conditions documented in SECRETS.md)
+function pickEnding(){
+  const roomsAll = ROOM_IDS.every(r => S.rooms.includes(r)), fragsAll = FRAGS.every(f => S.frags.includes(f.id)), seen = S.endings.filter(e => e !== 'true' && ENDINGS.some(x => x.id === e)).length;
+  if (S.inv.includes('homekey') && roomsAll && seen >= 3) return 'true';
+  if (fragsAll) return 'frags';
+  const mp = moodProfile(S.moods); if (mp.dominant && mp.level >= .5) return mp.dominant === 'calm' || mp.dominant === 'familiar' ? 'calm' : 'strange';
+  return 'home';
+}
+let endAnim = 0;
+function playEnding(id, isNew, replay){ return new Promise(res => {
+  const e = ENDINGS.find(x => x.id === id); const prev = mode; mode = 'ending'; $('#hud').classList.remove('on'); show('ending'); renderer.postU.uFade.value = 1;
+  const cv = $('#endcv'), tx = $('#endtext'), tt = $('#endtitle'), nb = $('#endnext'); tt.textContent = ''; tx.textContent = ''; nb.classList.remove('on'); tt.classList.remove('on');
+  const t0 = performance.now(); cancelAnimationFrame(endAnim); (function f(){ drawEnding(cv, id, (performance.now() - t0) / 1000); if ($('#ending').classList.contains('on')) endAnim = requestAnimationFrame(f); })();
+  audio.playMusic(id === 'strange' ? 'ch7' : id === 'sleep' ? 'secret' : 'title', 3, id === 'strange' ? .5 : 0);
+  let i = 0, timer = 0; const next = () => { clearTimeout(timer); if (i < e.lines.length){ tx.classList.remove('on'); setTimeout(() => { tx.textContent = e.lines[i++]; tx.classList.add('on'); }, 350); timer = setTimeout(next, 4200); }
+    else { tt.innerHTML = `${e.true ? '진엔딩 · ' : ''}엔딩 ${ENDINGS.indexOf(e) + 1}/${ENDINGS.length}<b>${e.title}</b>${isNew ? '<small>새로운 엔딩을 보았다</small>' : ''}`; tt.classList.add('on'); nb.classList.add('on'); } };
+  $('#ending').onclick = ev => { if (ev.target === nb) return; if (i <= e.lines.length && !nb.classList.contains('on')) next(); };
+  nb.onclick = ev => { ev.stopPropagation(); clearTimeout(timer); cancelAnimationFrame(endAnim); if (replay) mode = prev; res(); };
+  setTimeout(next, 1200); }); }
+// ---- journal (memory fragments + hidden-room memories) and endings gallery
+let panelBack = 'menu';
+function openJournal(back){ panelBack = back; const box = $('#journallist'); box.innerHTML = '';
+  const nf = S.frags.filter(f => FRAGS.some(x => x.id === f)).length, nr = S.rooms.filter(r => ROOM_IDS.includes(r)).length;
+  $('#journalsum').textContent = `❀ 기억의 조각 ${nf}/${FRAGS.length}   ◇ 숨겨진 방 ${nr}/${ROOM_IDS.length}`;
+  const inv = (S.inv || []).filter(i => ITEMS[i]); $('#journalinv').textContent = inv.length ? '가진 것 · ' + inv.map(itemName).join(', ') : '';
+  for (const ch of [...CHAPTERS].sort((a, b) => a.order - b.order)){ const fr = FRAGS.filter(f => f.ch === ch.id), rm = ROOM_IDS.filter(r => ROOM_TEXT[r]?.ch === ch.id); if (!fr.length && !rm.length) continue;
+    const open = S.visited[ch.id] > 0; if (ch.hidden && !open) continue; const sec = document.createElement('div'); sec.className = 'jch';
+    sec.innerHTML = `<h3>${open ? ch.title : '아직 꾸지 못한 꿈'}<small>${ch.subtitle}</small></h3>` + fr.map(f => S.frags.includes(f.id) ? `<p class="jf">❀ ${f.text}</p>` : `<p class="jf lock">❀ · · · 아직 찾지 못한 조각</p>`).join('')
+      + rm.map(r => S.rooms.includes(r) ? `<p class="jr">◇ ${ROOM_TEXT[r].text}</p>` : `<p class="jr lock">◇ · · · 숨겨진 방</p>`).join('');
+    box.appendChild(sec); }
+  mode = mode === 'pause' ? 'pause' : mode; show('journal'); }
+function openEndings(){ const box = $('#endinglist'); box.innerHTML = ''; $('#endingsum').textContent = `본 엔딩 ${S.endings.filter(e => ENDINGS.some(x => x.id === e)).length}/${ENDINGS.length}`;
+  ENDINGS.forEach((e, i) => { const got = S.endings.includes(e.id); const el = document.createElement('button'); el.className = 'endcard' + (got ? '' : ' lock');
+    el.innerHTML = `<b>${e.true ? '진엔딩 · ' : ''}엔딩 ${i + 1} · ${got ? e.title : '???'}</b><span>${got ? e.lines[0] : '힌트: ' + e.hint}</span>`;
+    if (got) el.onclick = async () => { await playEnding(e.id, false, true); mode = 'menu'; audio.playMusic('title'); openEndings(); };
+    box.appendChild(el); }); show('endings'); }
 function showMood(pt, ending, endText){
   show('mood'); $('#hud').classList.remove('on'); $('#moodday').textContent = `${pt.day}일째 꿈`;
   $('#moodscenes').textContent = pt.scenes.map(id => chapters.get(id)?.title).join(' → ');
@@ -173,13 +226,13 @@ async function startDream(id, at){
 // ---- UI: menu
 function buildMenu(){
   $('#menuday').textContent = S.day ? `지금까지 ${S.day}번의 꿈을 꾸었다` : '아직 아무 꿈도 꾸지 않았다';
-  $('#secrets').textContent = `✧ 비밀 ${S.secrets.filter(s => SECRET_IDS.includes(s)).length}/${SECRET_IDS.length}   ◇ 숨겨진 방 ${S.rooms.filter(r => ROOM_IDS.includes(r)).length}/${ROOM_IDS.length}`;
+  $('#secrets').textContent = `✧ 비밀 ${S.secrets.filter(s => SECRET_IDS.includes(s)).length}/${SECRET_IDS.length}   ◇ 숨겨진 방 ${S.rooms.filter(r => ROOM_IDS.includes(r)).length}/${ROOM_IDS.length}   ❀ 조각 ${S.frags.filter(f => FRAGS.some(x => x.id === f)).length}/${FRAGS.length}`;
   const list = $('#chapters'); list.innerHTML = '';
   for (const ch of [...CHAPTERS].sort((a, b) => a.order - b.order)){
     const open = ch.hidden ? (S.visited[ch.id] > 0) : S.unlocked.includes(ch.id);
     if (ch.hidden && !open) continue;
     const el = document.createElement('button'); el.className = 'card' + (open ? '' : ' locked') + (S.cleared.includes(ch.id) ? ' cleared' : '');
-    const st = ch.strangeness || 0; const title = open ? glitchText(ch.title, st * .8) : '???';
+    const st = ch.strangeness || 0; const title = open ? ch.title : '???';
     el.innerHTML = `<div class="art" style="background-image:url(${ASSETS.img[ch.art] || ASSETS.img.title});${open ? `filter:hue-rotate(${st * 40}deg) saturate(${1 + st * .4})` : ''}"></div><div class="meta"><small>${ch.subtitle}</small><b>${title}</b><span>${open ? (S.cleared.includes(ch.id) ? '깨어남 ✓' : (S.visited[ch.id] ? `${S.visited[ch.id]}번 방문` : '새로운 꿈')) : '아직 꾸지 못한 꿈'}</span><i class="strange" style="--s:${st}"></i></div>`;
     if (open) el.onclick = () => { audio.sfx('chime', .3); startDream(ch.id); };
     list.appendChild(el);
@@ -196,7 +249,7 @@ function renderSlots(){
   const box = $('#slotlist'); box.innerHTML = '';
   for (const n of SLOTS){ if (slotMode === 'save' && n === 0) continue; const r = save.readSlot(n);
     const el = document.createElement('button'); el.className = 'slot' + (r ? '' : ' empty');
-    el.innerHTML = `<b>${n === 0 ? '자동 기록' : `기록 ${n}`}</b><span>${r ? `${r.where?.title || ''} · ${(r.profile?.day || 0) + 1}일째 · ✧${r.profile?.secrets?.length || 0} ◇${r.profile?.rooms?.length || 0} · ${fmt(r.savedAt)}` : '비어 있음'}</span>`;
+    el.innerHTML = `<b>${n === 0 ? '자동 기록' : `기록 ${n}`}</b><span>${r ? `${r.where?.title || ''} · ${(r.profile?.day || 0) + 1}일째 · ✧${r.profile?.secrets?.length || 0} ◇${r.profile?.rooms?.length || 0} ❀${r.profile?.frags?.length || 0} · ${fmt(r.savedAt)}` : '비어 있음'}</span>`;
     el.onclick = () => {
       if (slotMode === 'save'){ const p = state.localPlayer; if (r && !confirm('이 기록을 덮어쓸까요?')) return; const sp1 = p.safe || p.pos; save.saveSlot(n, { scene: state.sceneId, pos: { x: sp1.x, z: sp1.z }, yaw: p.yaw, title: curCh?.title }); toast('기록했어요'); renderSlots(); }
       else if (r){ const where = save.loadSlot(n); Object.assign(S, save.data); toast('기록을 불러왔어요'); if (where?.scene && chapters.has(where.scene)) startDream(where.scene, { x: where.pos.x, z: where.pos.z, yaw: where.yaw }); else toMenu(); }
@@ -222,6 +275,11 @@ $('#menuload').onclick = () => openSlots('load', 'menu');
 $('#wake').onclick = () => { show('none'); mode = 'play'; endDream(null); };
 $('#tomenu').onclick = () => { autosave(); renderer.postU.uFade.value = 1; toMenu(); };
 $('#moodnext').onclick = () => toMenu();
+$('#menujournal').onclick = () => { audio.sfx('chime', .25); openJournal('menu'); };
+$('#menuendings').onclick = () => { audio.sfx('chime', .25); openEndings(); };
+$('#pausejournal').onclick = () => openJournal('pause');
+$('#journalback').onclick = () => { if (panelBack === 'pause') show('pause'); else { show('menu'); } };
+$('#endingsback').onclick = () => show('menu');
 $('#optps1').onchange = e => { S.settings.ps1 = e.target.checked; renderer.setPS1(S.settings.ps1); save.write(); };
 $('#optvol').oninput = e => { S.settings.volume = +e.target.value; audio.setVolume(S.settings.volume); save.write(); };
 $('#optsens').oninput = e => { S.settings.sens = +e.target.value; input.sens = 0.0055 * S.settings.sens; save.write(); };
@@ -247,7 +305,8 @@ function loop(now){
     const still = (p.moving || 0) < .05 && Math.abs(cmd.lookX) + Math.abs(cmd.lookY) < 1e-4, stillish = (p.moving || 0) < .05;
     if (input.enabled && !fading && mode === 'play'){
       const cp = Math.cos(p.pitch); fwd.x = -Math.sin(p.yaw) * cp; fwd.y = Math.sin(p.pitch); fwd.z = -Math.cos(p.yaw) * cp;
-      for (const th of things){ if (!th.r && !th.gaze) continue; const mx = th.mesh ? th.mesh.position.x : th.x, mz = th.mesh ? th.mesh.position.z : th.z; const d = Math.hypot(p.pos.x - mx, p.pos.z - mz);
+      interact.update(dt, p, fwd, true);
+      for (const th of things){ if (th.act || (!th.r && !th.gaze)) continue; const mx = th.mesh ? th.mesh.position.x : th.x, mz = th.mesh ? th.mesh.position.z : th.z; const d = Math.hypot(p.pos.x - mx, p.pos.z - mz);
         if (th.used){ if ((th.rearm || th.rearmAfter) && d > (th.r || 1) + 2.5){ th.used = false; th.rearmAfter = false; } continue; }
         if (th.gaze){ // look at it for N seconds
           const my = (th.mesh ? th.mesh.position.y : th.y || 0) + (th.gazeY ?? 1); const vx = mx - p.pos.x, vy = my - (p.pos.y + p.height), vz = mz - p.pos.z, L = Math.hypot(vx, vy, vz);
@@ -257,12 +316,14 @@ function loop(now){
       if (still){ stillTime += dt; if (stillTime > 45 && !stillFired){ stillFired = true; say('가만히 있으니, 꿈이 먼저 다가와 속삭인다. "천천히 와도 괜찮아."', 6); foundSecret('still'); } } else stillTime = 0;
       // eerie calm whispers scale with strangeness
       const s = strangeNow(); if (s > .3){ whisperT -= dt; if (whisperT <= 0 && msgTimer <= 0){ const pool = curCh.strange?.whispers || DEFAULT_WHISPERS; say(pool[(Math.random() * pool.length) | 0], 4); whisperT = 60 - s * 30 + Math.random() * 20; } }
-      if (s > .45){ titleGlitchT -= dt; if (titleGlitchT <= 0){ const el = $('#chapname'); el.textContent = glitchText(curCh.title, 1); el.classList.add('glitch'); setTimeout(() => { el.textContent = curCh.title; el.classList.remove('glitch'); }, 180 + Math.random() * 300); titleGlitchT = 8 - s * 5 + Math.random() * 6; } }
+      if (s > .45){ titleGlitchT -= dt; if (titleGlitchT <= 0){ const el = $('#chapname'); el.classList.add('glitch'); setTimeout(() => { el.classList.remove('glitch'); }, 180 + Math.random() * 300); titleGlitchT = 8 - s * 5 + Math.random() * 6; } }
       autosaveT -= dt; if (autosaveT <= 0){ autosaveT = 30; autosave(); }
-    }
+      // distant ambient events (never loud, never sudden): a far-away music box, a low hum — more often as dreams get stranger
+      if (s > .15){ ambientT -= dt; if (ambientT <= 0){ ambientT = 70 - s * 40 + Math.random() * 30; const r = Math.random(); if (r < .5) audio.tone('toy', .18 + s * .1, s); else if (s > .45) audio.tone('hum', .5, s); else audio.tone('bell', .12, s, .5); } }
+    } else interact.hideAll();
   }
   if (msgTimer > 0){ msgTimer -= dt; if (msgTimer <= 0) $('#say').classList.remove('on'); }
-  if (mode !== 'title' && mode !== 'menu' && mode !== 'mood' && mode !== 'slots') renderer.frame(state, t, dt);
+  if (mode !== 'title' && mode !== 'menu' && mode !== 'mood' && mode !== 'slots' && mode !== 'ending' && mode !== 'endings' && !(mode === 'journal' && panelBack === 'menu')) renderer.frame(state, t, dt);
 }
 bus.on('player:step', () => audio.sfx('step' + (Math.random() * 3 | 0), .22, (.9 + Math.random() * .2) * (1 - strangeNow() * .2)));
 requestAnimationFrame(loop);
@@ -271,5 +332,5 @@ const sb = $('#soundbtn'); let blockedFor = 0;
 setInterval(() => { const b = (mode !== 'title') && audio.blocked(); blockedFor = b ? blockedFor + 1 : 0; sb.classList.toggle('on', blockedFor >= 2); }, 1000);
 sb.addEventListener('click', e => { e.stopPropagation(); audio.unlock(); const w = audio.want; if (w) audio.playMusic(w.name, 1, w.strange, true); toast('소리가 안 들리면 무음 모드(옆 스위치)를 끄고 볼륨을 올려 주세요'); });
 show('title'); $('#titlebg').style.backgroundImage = `url(${ASSETS.img.title})`;
-window.__gohome = { moodProfile, showMood: pt => showMood(pt || S.moods[S.moods.length - 1] || { day: S.day, x: 0, y: 0, scenes: [] }), state, bus, chapters, save, link, warp, loadScene, startDream, renderer, input, audio, things: () => things, busy: () => fading, audioStatus: () => audio.status(), SECRET_IDS, ROOM_IDS, openSlots };
+window.__gohome = { interact, FRAGS, ITEMS, ENDINGS, pickEnding, playEnding, openJournal, openEndings, endDream, moodProfile, showMood: pt => showMood(pt || S.moods[S.moods.length - 1] || { day: S.day, x: 0, y: 0, scenes: [] }), state, bus, chapters, save, link, warp, loadScene, startDream, renderer, input, audio, things: () => things, busy: () => fading, audioStatus: () => audio.status(), SECRET_IDS, ROOM_IDS, openSlots };
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(() => {});

@@ -1,4 +1,5 @@
 // Chapter 1 — 끝없는 복도. Pure data: the engine builds everything from this.
+const PI = Math.PI;
 export default {
   id: 'ch1', order: 1, strangeness: .08, title: '끝없는 복도', subtitle: '첫 번째 꿈', art: 'ch1', music: 'ch1',
   intro: ['눈을 떴다. 아니, 아직 꿈속이다.', '몸은 어른인데, 마음은 길 잃은 아이처럼 집을 찾고 있다.'],
@@ -13,7 +14,7 @@ export default {
     { type: 'box', x: 1.8, z: 48, w: .2, d: 2, h: 3, tex: 'wallpaper', color: '#fff6ee', solid: false },
     { type: 'room', x: 4.3, z: 48, w: 5, d: 4, height: 2.4, floor: 'wood', wallColor: '#ffe8f0', ceilColor: '#ffe0ec', gaps: [{ wall: 'w', at: 0, w: 2 }] },
     { type: 'blocks', x: 5.5, z: 47, n: 4 },
-    { type: 'orb', x: 5.8, z: 49, y: 1.1, color: '#ffe0b0', r: 1, room: 'ch1_closet', text: '기억의 조각 · 벽장 속 크레용 그림. 삐뚤빼뚤한 글씨로 "우리 집". 그때 내 손은 이렇게 작았다.' },
+    { type: 'orb', x: 5.8, z: 49, y: 1.1, color: '#ffe0b0', r: 1, room: 'ch1_closet', text: '기억의 조각 · 벽장 속 크레파스 그림. 삐뚤빼뚤한 글씨로 "우리 집". 그때 내 손은 이렇게 작았다.' },
     { type: 'text', x: 0, z: 8, r: 2, text: '이 복도… 초등학교 복도 같다. 이렇게 낮았던가.', mood: [1, 0] },
     { type: 'heightmarks', x: 1.68, z: 14, rot: -Math.PI / 2, r: 1.3, text: '벽에 키재기 눈금이 남아 있다. 맨 위 눈금이 지금 내 허리께에 닿는다.', mood: [2, 0] },
     { type: 'cloud', x: 0, y: 2.4, z: 12, s: .5, puffs: 4 },
@@ -51,6 +52,28 @@ export default {
     { type: 'platform', style: 'cloud', x: 6, y: 2.8, z: 71.5, w: 1.8, d: 1.8 },
     { type: 'platform', style: 'wood', x: 2.5, y: 3.4, z: 73, w: 3.4, d: 2.4, h: .3 },
     { type: 'orb', x: 2.5, z: 73.3, y: 4.6, color: '#fff0d0', r: 1.2, room: 'ch1_cloudledge', text: '기억의 조각 · 구름 위 선반에 오래된 열쇠 하나. 손잡이에 "집"이라고 새겨져 있다. 어른이 되면서 어딘가에 두고 온 열쇠다.' },
+    // ---- v7: things to touch (✋ button) ----
+    { type: 'wallswitch', x: -1.66, y: 1.3, z: 5, rot: PI / 2, act: { kind: 'toggle', label: '스위치', flag: 'dark', dark: true, lines: ['불을 껐다. 복도 끝까지 어둠이 번진다. 벽에서 무언가 빛난다.'], offLines: ['불을 켰다. 빛나던 글씨가 사라졌다.'], mood: [0, 1] } },
+    { type: 'walltext', x: 1.66, y: 1.5, z: 9, rot: -PI / 2, w: 2, write: '집에 가고 싶어', ink: '#c8ffd8', showIf: 'dark' },
+    { type: 'walltext', x: -1.66, y: 1.1, z: 24, rot: PI / 2, w: 2.4, write: '선생님, 저 집에 가도 돼요?', ink: '#c8ffd8', showIf: 'dark' },
+    { type: 'walltext', x: 1.66, y: .8, z: 42, rot: -PI / 2, w: 1.6, write: '기다릴게', ink: '#c8ffd8', showIf: 'dark' },
+    { type: 'backpack', x: -1.2, z: 11, rot: .6, act: { kind: 'open', lines: ['책가방 속에 알림장이 있다.', '"준비물: 집에 가는 길. 꼭 챙겨 오세요."'], frag: 'ch1_note', fragText: '책가방 속 알림장. "준비물: 집에 가는 길." 그때는 그게 제일 쉬운 숙제였다.', empty: '가방 안에는 지우개 가루뿐이다.' } },
+    { type: 'dresser', x: 1.35, z: 23, rot: -PI / 2, scale: .9, act: { kind: 'open', lines: ['서랍 안에 몽당 크레파스가 하나 있다. 분홍색이다.'], give: 'crayon', item: 'crayon', name: '분홍 크레파스', icon: '🖍', empty: '서랍 안에는 크레파스 가루만 남았다.' } },
+    { type: 'walltext', x: -8, y: 1.3, z: 19.64, rot: PI, w: 1.8, write: '여기에 그려 주세요', ink: '#a898a8', font: 'print', hideIf: 'drawn', act: { kind: 'use', label: '그리기', need: 'crayon', needText: '하얀 벽에 "여기에 그려 주세요"라고 적혀 있다. 그릴 것이 있다면…', lines: ['크레파스로 집을 그렸다. 지붕, 창문, 굴뚝.', '그림 속 창문에 불이 켜졌다. 나는 칠하지 않았는데.'], flag: 'drawn', secret: 'ch1_drawing', mood: [2, 1] } },
+    { type: 'walltext', x: -8, y: 1.3, z: 19.63, rot: PI, w: 1.8, write: '⌂ 우리 집', ink: '#ff7ab0', showIf: 'drawn' },
+    { type: 'radio', x: 12.5, z: 26.2, act: { kind: 'play', lines: ['…수영 시간이 끝났습니다. 모두 물 밖으로 나오세요.', '…모두 집에 가세요. 모두. 모두.', '…아직 물속에 있는 친구는, 천천히 나와도 괜찮아요.'], mood: [1, 1] } },
+    { type: 'frag', x: 4, y: 1.1, z: 33.5, act: { kind: 'frag', frag: 'ch1_cap', fragText: '수영모 자국이 이마에 남은 채로 집에 가던 길. 젖은 머리에서 소독약 냄새가 났다.', lines: ['물에 젖은 종이 한 장. 기억의 조각이다.'] } },
+    { type: 'mirror', x: 1.68, y: .3, z: 55, rot: -PI / 2, w: .9, h: 1.7, act: { kind: 'mirror', lines: ['거울 속에 아이가 서 있다. 내가 움직이면 아이도 움직인다.', '거울 속 아이에게는 이 복도가 딱 맞는 크기다.', '아이가 먼저 웃었다. 나도 따라 웃었다.'], mood: [1, 1] } },
+    { type: 'teddy', x: -9, z: 74, scale: 1.6, act: { kind: 'toy', label: '안아 주기', lines: ['곰 인형을 안았다. 배 속에서 노래가 흘러나온다.', '노래 가사가 조금 틀렸다. "우리 집에 왜 왔니, 왜 왔니…"', '곰 인형이 내 품에 비해 너무 작다.'], mood: [2, 0] } },
+    { type: 'rotary', x: -10, z: 64, rot: .4, act: { kind: 'ring', ringText: '어디선가 전화벨이 울린다.', lines: ['"여보세요? 거기 몇 학년 몇 반이니?"', '"…아, 다 컸구나. 미안, 목소리를 못 알아봤어."', '"그래도 끝나면 바로 집에 와. 알았지?"'], mood: [2, 1] } },
+    { type: 'child', x: 11, z: 78, rot: PI, unseen: [[-11, 62, 0], [11, 62, -PI / 2], [-11, 79, PI]], act: { kind: 'lines', label: '찾았다', r: 1.4, lines: ['"찾았다!" 아이가 웃으며 다시 숨으러 달려간다.', '숨바꼭질. 생각해 보니 술래는 늘 나였다.', '"이번엔 네가 숨어. 나는 백까지 셀게."'], mood: [2, 1] } },
+    { type: 'toypiano', x: -16, z: 17.1, act: { kind: 'toy', tone: 'piano', label: '치기', lines: ['장난감 피아노. 건반 하나가 음이 맞지 않는다.', '어릴 때 치던 곡의 첫 소절이 손가락에 남아 있다.', '…'], after: { n: 7, secret: 'ch1_piano', text: '일곱 번째로 건반을 누르자, 복도 끝에서 누군가 박수를 친다. 아주 작은 손으로.' } } },
+    { type: 'frag', x: -19.5, y: 1, z: 18.8, act: { kind: 'frag', frag: 'ch1_slipper', fragText: '실내화 주머니를 빙빙 돌리며 걷던 하굣길. 주머니에는 늘 삐뚤빼뚤한 내 이름이 쓰여 있었다.' } },
+    { type: 'key', x: 3.6, y: 3.45, z: 72.4, act: { kind: 'pickup', item: 'homekey', name: '집 열쇠', icon: '🔑', lines: ['"집"이라고 새겨진 열쇠. 손에 쥐니 따뜻하다.', '어딘가에 이 열쇠가 맞는 문이 있을 것이다.'] } },
+    // ambient: notices, writing that wasn't there, wrong-scale furniture
+    { type: 'walltext', x: -1.66, y: 2.2, z: 27, rot: PI / 2, w: 1.8, write: '복도에서 뛰지 마세요', ink: '#8a7a90', font: 'print' },
+    { type: 'walltext', x: -1.66, y: 1.4, z: 41, rot: PI / 2, w: 2.2, write: '뛰어도 돼. 집에 가는 길이라면.', ink: '#c06a8a', appear: true },
+    { type: 'chair', x: -1.2, z: 31, scale: .35, rot: .4 }, { type: 'chair', x: 6, z: 66, scale: 2.6, rot: -.5, visitAlts: [[-7, 70, 2], [4, 77, 3.5]] },
   ],
   mutations: [
     { when: { dayMod: [2, 1] }, palette: { fog: '#f7e2ee', skyMid: '#ffd8ec' }, hueDrift: .15, text: '복도의 벽지가 조금 분홍색이 되었다.' },

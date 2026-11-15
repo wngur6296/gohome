@@ -1,3 +1,4 @@
+const PI = Math.PI;
 export default {
   id: 'ch3', order: 3, strangeness: .32, title: '어린 시절의 방', subtitle: '세 번째 꿈', art: 'ch3', music: 'ch3',
   intro: ['내 방이다. 그런데 모든 게 너무 크다.', '몸은 커 버렸는데, 마음은 아직 이 방 크기 그대로인가 보다.'],
@@ -41,6 +42,27 @@ export default {
     { type: 'text', x: 0, z: -66, r: 3, text: '불이 켜진 창문. 그런데 창문이 하나 더 많다.', mood: [2, 1] },
     { type: 'house', x: 0, z: -84, solid: [3.2, 3.2] },
     { type: 'door', id: 'home', x: .6, z: -82.4, scale: .75, goal: true, r: 1.8, frame: '#a07a6a', color: '#c8a090', glow: '#ffd8a0', text: '현관문을 열었다. …그런데 여기는 우리 집이 아니다. 아직은.' },
+    // ---- v7: things to touch (everything is too big) ----
+    { type: 'dresser', x: 9, z: -6, rot: -PI / 2, scale: 2.4, solid: [1.3, 2.5], act: { kind: 'open', r: 2.4, lines: ['서랍이 내 키만큼 높다. 겨우 손을 넣어 꺼낸 건 그림일기.', '"오늘은 엄마가 늦게 왔다. 그래도 기다렸다. 참 잘했어요."'], frag: 'ch3_diary', fragText: '그림일기. "오늘은 엄마가 늦게 왔다. 그래도 기다렸다." 선생님이 찍어 준 참 잘했어요 도장.' } },
+    { type: 'lamp2', x: -9.6, z: 0, scale: 2.5, act: { kind: 'toggle', label: '불 끄기', flag: 'dark', dark: true, r: 2, lines: ['불을 끄자 벽의 야광별이 하나씩 켜진다. 별 사이에 글씨가 보인다.'], offLines: ['불을 켰다. 방이 다시 너무 커졌다.'] } },
+    { type: 'walltext', x: -10.85, y: 6, z: 3, rot: PI / 2, w: 5, write: '잘 자. 내일 또 놀자', ink: '#d8ffc8', showIf: 'dark' },
+    { type: 'walltext', x: -6.5, y: 5, z: -9.85, w: 4, write: '엄마 언제 와?', ink: '#d8ffc8', showIf: 'dark' },
+    { type: 'robot', x: -2, z: 6.5, scale: 2.5, act: { kind: 'toy', label: '켜기', r: 1.8, lines: ['로봇이 삐빅 소리를 내며 한 걸음 걷고 멈춘다.', '로봇 등에 이름표가 붙어 있다. 내 이름이다. 글씨가 아주 서툴다.', '"배터리를… 갈아… 주세요…"'] } },
+    { type: 'key', x: -3.6, z: 2, color: '#c8c8d8', act: { kind: 'pickup', item: 'windkey', name: '태엽 열쇠', icon: '🗝', lines: ['침대 옆 바닥에서 태엽 열쇠를 찾았다. 무언가를 감아 주던 열쇠다.'] } },
+    { type: 'crib', x: 4.5, z: -8.3, scale: 2, act: { kind: 'use', label: '태엽 감기', r: 2.4, need: 'windkey', needText: '모빌이 멈춰 있다. 태엽을 감을 무언가가 필요하다.', tone: 'toy', lines: ['태엽을 감자 모빌이 돌기 시작한다.', '방이 모빌을 따라 천천히 돈다. 아니, 내가 작아지고 있다…'], room: 'ch3_mobile', warp: { x: 300, z: 3, yaw: 0 }, warpDelay: 4200 } },
+    { type: 'mirror', x: 10.88, y: .3, z: 1, rot: -PI / 2, w: 2, h: 4, act: { kind: 'mirror', r: 2, lines: ['거울 속 아이에게는 이 방이 딱 맞는 크기다.', '거울 속 아이가 침대를 가리킨다. 거기서 잠들던 때가 있었다.'], mood: [1, 1] } },
+    { type: 'radio', x: -6, z: -2, scale: 2.4, act: { kind: 'play', r: 2, lines: ['테이프가 돌아간다. 녹음된 내 목소리. "열 살의 내가, 어른이 된 나에게…"', '"…어른이 되면 밤이 안 무서워?"', '"…나는 아직 조금 무서워. 그러니까 너도 무서워해도 돼."'], mood: [2, 1] } },
+    { type: 'frag', x: -9, y: 1.1, z: -4.5, act: { kind: 'frag', frag: 'ch3_book', fragText: '매일 밤 같은 페이지를 읽어 달라고 졸랐던 그림책. 마지막 장에는 늘 "그리고 모두 집으로 돌아갔어요."' } },
+    { type: 'rotary', stand: false, x: 3, z: 3, scale: 2.2, color: '#ffd070', act: { kind: 'ring', r: 1.8, ringText: '장난감 전화기가 울린다. 건전지도 없는데.', lines: ['"따르릉. 여보세요, 거기 우리 집이에요?"', '"…응. 나 지금 꿈속이야. 곧 갈게."', '장난감 수화기 너머에서 아이가 킥킥 웃는다.'], mood: [2, 1] } },
+    { type: 'doll', x: -5, z: -7.6, scale: 3, watch: .4, visitAlts: [[2, -6, 0], [-9, 6, 0]], act: { kind: 'lines', r: 2.2, lines: ['인형이 고개를 돌려 나를 본다. 원래 이쪽을 보고 있었던가.', '인형의 눈은 단추다. 단추 하나가 떨어질 듯 흔들린다.'], mood: [0, 2] } },
+    { type: 'frag', x: -1, y: 1.1, z: -44, act: { kind: 'frag', frag: 'ch3_star', fragText: '창문에 붙여 둔 야광별 스티커. 다 떼어 냈다고 생각했는데, 하나가 아직 남아 있었다.' } },
+    { type: 'walltext', x: 0, y: 2.6, z: 9.85, rot: PI, w: 4, write: '여기는 내 방이야', ink: '#8a6ab8', appear: true },
+    { type: 'child', x: 1, z: -64, h: 1, unseen: [[-1, -75, 0], [2, -50, 0], [-1.5, -30, 0]] },
+    // HIDDEN ROOM (wind the mobile): inside the mobile
+    { type: 'room', x: 300, z: 0, w: 9, d: 9, height: 5, floor: 'stars', wallTex: 'stars', ceiling: false },
+    { type: 'crib', x: 300, z: -2, scale: 1.4 }, { type: 'moon', x: 300, y: 9, z: -3, r: 1.2 },
+    { type: 'orb', x: 301.8, z: -1, y: 1.2, color: '#fff8d0', r: 1, room: 'ch3_mobile', text: '기억의 조각 · 아기 침대 위의 모빌. 잠들기 전 마지막으로 보던 별과 달. 그때 세상은 이 모빌만큼 작고 안전했다.' },
+    { type: 'door', x: 300, z: 4.38, rot: PI, glow: '#fff', r: 1, warp: { x: 0, z: -6, yaw: PI }, text: '다시 내 방으로.' },
   ],
   mutations: [
     { when: { dayMod: [2, 1] }, palette: { skyMid: '#a07ac8', fog: '#6a5098' } },

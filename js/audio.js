@@ -92,5 +92,26 @@ export class AudioManager {
     const s = this.ctx.createBufferSource(); s.buffer = b; s.playbackRate.value = rate;
     const g = this.ctx.createGain(); g.gain.value = vol; s.connect(g); g.connect(this.master); s.start();
   }
+  /** Soft synthesized one-shots for v7 props. Every envelope fades in (no sudden loud sounds). */
+  tone(kind, vol = 1, strange = 0, pitch = 1){
+    const c = this.ctx; if (!c || c.state !== 'running') return; const t0 = c.currentTime + .02, out = c.createGain(); out.gain.value = Math.min(1, vol); out.connect(this.master);
+    const note = (f, at, dur, type = 'sine', v = .1, att = .015) => { const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f * pitch * (1 - strange * .03 * Math.sin(at * 7)); g.gain.setValueAtTime(0, t0 + at); g.gain.linearRampToValueAtTime(v, t0 + at + att); g.gain.exponentialRampToValueAtTime(.0008, t0 + at + dur); o.connect(g); g.connect(out); o.start(t0 + at); o.stop(t0 + at + dur + .05); };
+    const noise = (at, dur, f = 1200, v = .04, q = .8) => { const n = c.createBuffer(1, Math.ceil(c.sampleRate * dur), c.sampleRate), d = n.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const s = c.createBufferSource(); s.buffer = n; const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q; const g = c.createGain(); g.gain.setValueAtTime(0, t0 + at); g.gain.linearRampToValueAtTime(v, t0 + at + .15); g.gain.linearRampToValueAtTime(0, t0 + at + dur); s.connect(bp); bp.connect(g); g.connect(out); s.start(t0 + at); };
+    const MEL = [[0, 4, 7, 12, 7, 4, 0, -5], [7, 7, 9, 7, 4, 2, 0], [0, 0, 7, 7, 9, 9, 7, 5, 5, 4, 4, 2, 2, 0], [12, 11, 7, 4, 7, 11, 12, 16]];
+    switch (kind){
+      case 'ring': for (let k = 0; k < 2; k++) for (let i = 0; i < 12; i++) note(i % 2 ? 1180 : 940, k * .9 + i * .05, .06, 'sine', .05, .01); break; // gentle bell trill
+      case 'toy': { const m = MEL[(Math.random() * MEL.length) | 0], base = 523; m.forEach((s, i) => note(base * Math.pow(2, s / 12), i * .26, .9, 'triangle', .07)); break; }
+      case 'static': noise(0, 1.4, 1800, .035, .5); noise(.2, 1.0, 600, .02, 2); note(440, .1, 1.3, 'sine', .012, .3); break;
+      case 'open': { const o = c.createOscillator(), g = c.createGain(), lp = c.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.setValueAtTime(70, t0); o.frequency.linearRampToValueAtTime(110 + strange * 60, t0 + .6); lp.type = 'lowpass'; lp.frequency.value = 500; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.035, t0 + .1); g.gain.linearRampToValueAtTime(0, t0 + .7); o.connect(lp); lp.connect(g); g.connect(out); o.start(t0); o.stop(t0 + .8); break; }
+      case 'click': note(1600, 0, .05, 'square', .02, .003); break;
+      case 'pick': note(660, 0, .4, 'sine', .07); note(990, .12, .6, 'sine', .06); break;
+      case 'frag': [0, 4, 7, 11, 14].forEach((s, i) => note(784 * Math.pow(2, s / 12), i * .09, 1.4, 'sine', .05)); break;
+      case 'bell': note(660, 0, 2.2, 'sine', .08); note(660 * 2.76, 0, .8, 'sine', .02); break;
+      case 'wrong': note(330, 0, .5, 'triangle', .05); note(311, .18, .7, 'triangle', .05); break;
+      case 'hum': note(110, 0, 2.5, 'sine', .04, .6); note(165, 0, 2.5, 'sine', .02, .8); break;
+      case 'piano': { const n = [0, 2, 4, 5, 7, 9, 11, 12][(Math.random() * 8) | 0]; note(523 * Math.pow(2, n / 12), 0, .7, 'triangle', .08); break; }
+    }
+  }
   preload(names){ names.forEach(n => this.load(n)); }
 }

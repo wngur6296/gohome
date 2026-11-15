@@ -1,4 +1,5 @@
 // Chapter 4 — 빈 놀이터. Strangeness starts to show: still figures, faces in the sky.
+const PI = Math.PI;
 export default {
   id: 'ch4', order: 4, strangeness: .45, title: '빈 놀이터', subtitle: '네 번째 꿈', art: 'ch4', music: 'ch4',
   intro: ['해가 지지 않는 놀이터.', '그네에 앉으니 무릎이 땅에 닿는다. 나는 너무 커 버렸다.'],
@@ -41,7 +42,38 @@ export default {
     { type: 'chair', x: 198, z: -1.2 }, { type: 'chair', x: 202, z: -1.2 }, { type: 'chair', x: 198, z: 2.3 }, { type: 'chair', x: 202, z: 2.3, flip: true, y: 2.8 },
     { type: 'orb', x: 200, z: -5.5, y: 1.3, color: '#e8ffd8', r: 1.2, room: 'ch4_classroom', text: '기억의 조각 · 칠판에 "오늘의 숙제: 커서 되고 싶은 것". 다 커 버렸는데, 나는 아직 그 숙제를 끝내지 못했다.' },
     { type: 'door', x: 200, z: 6.8, rot: Math.PI, glow: '#ffe8d0', r: 1, warp: { x: -8, z: 3, yaw: Math.PI }, text: '모래 위로.' },
+    // ---- v7: things to touch ----
+    // PUZZLE → HIDDEN ROOM: hopscotch, counted backwards from "home"
+    { type: 'sign', x: -4.6, z: 4.5, color: '#ffe8a8', act: { kind: 'lines', label: '읽기', lines: ['분필로 쓴 낙서: "사방치기 마지막 칸은 집. 집에서부터 거꾸로 뛰어 봐."'] } },
+    { type: 'walltext', x: -3, z: -4, w: 1.4, flat: true, write: '집', ink: '#ff8ab0' },
+    { type: 'walltext', x: -3, z: 2, w: 1.2, flat: true, write: '하나', ink: '#7a6a9a', act: { kind: 'step', label: '밟기', r: .75, puzzle: 'hop', key: '1' } },
+    { type: 'walltext', x: -3, z: .5, w: 1.2, flat: true, write: '둘', ink: '#7a6a9a', act: { kind: 'step', label: '밟기', r: .75, puzzle: 'hop', key: '2' } },
+    { type: 'walltext', x: -3, z: -1, w: 1.2, flat: true, write: '셋', ink: '#7a6a9a', act: { kind: 'step', label: '밟기', r: .75, puzzle: 'hop', key: '3' } },
+    { type: 'walltext', x: -3, z: -2.5, w: 1.2, flat: true, write: '넷', ink: '#7a6a9a', act: { kind: 'step', label: '밟기', r: .75, puzzle: 'hop', key: '4' } },
+    { type: 'shoes', one: true, x: -16, z: -10, scale: 1.3, act: { kind: 'pickup', item: 'shoe', name: '작은 운동화 한 짝', icon: '👟', lines: ['모래 속에 작은 운동화 한 짝이 묻혀 있다.', '누군가 한 짝만 신고 집에 갔나 보다.'] } },
+    { type: 'child', x: -30, z: -38, shoe: 'one', rot: .5, act: { kind: 'use', label: '건네기', need: 'shoe', needText: '아이가 한쪽 발을 내려다보고 있다. 신발 한 짝이 없다.', lines: ['아이에게 신발을 건넸다. 아이가 고개를 꾸벅 숙인다.', '"이제 집에 갈 수 있어." 아이는 노을 쪽으로 걸어가 보이지 않게 되었다.'], frag: 'ch4_shoe', fragText: '운동화 한 짝을 잃어버리고 울면서 집에 간 날. 혼날 줄 알았는데, 아무도 혼내지 않았다.', hideSelf: true, mood: [2, 1] } },
+    { type: 'bench', x: -14, z: 6, rot: .3 },
+    { type: 'radio', x: -14, y: .48, z: 6.1, rot: .3, act: { kind: 'play', lines: ['…여기는 놀이터 방송실입니다. 해가 지면 모두 집으로 돌아가세요.', '…해가 지지 않습니다. 해가 지지 않습니다.', '…그러니까 조금만 더 놀아도 괜찮습니다.'], mood: [1, 1] } },
+    { type: 'bench', x: 14, z: -4, rot: -.2 },
+    { type: 'rotary', stand: false, x: 14.4, y: .48, z: -4, act: { kind: 'ring', ringText: '놀이터 벤치 위에서 전화가 울린다.', lines: ['"술래야, 아직도 찾고 있니?"', '"우리 다 집에 갔어. 너만 아직 거기 있어."', '"…괜찮아. 천천히 와."'], mood: [1, 2] } },
+    { type: 'child', x: 6, z: -12, rot: 2, unseen: [[12, -12, PI], [9, -3, 0], [2, -15, 1]], act: { kind: 'lines', lines: ['아이들이 술래잡기를 한다. 아무도 나를 술래로 정해 주지 않는다.', '"어른이 왜 여기 있어?" 아이가 묻는다. 대답하지 못했다.', '아이들이 내 그림자를 밟으며 논다. 그림자만은 아직 아이 크기다.'], mood: [1, 2] } },
+    { type: 'child', x: -4, z: -16, hairColor: '#5a4a50', unseen: [[-12, -12, 1], [3, -26, 2]] }, { type: 'child', x: 20, z: -20, h: .95, unseen: [[24, -8, 0], [16, -28, 2]] },
+    { type: 'sandpile', x: 22, z: 2, act: { kind: 'open', label: '파 보기', lines: ['모래를 파자 깡통이 나왔다. 타임캡슐이다.', '안에는 구슬 세 개와 쪽지 한 장. "이걸 찾았으면 너는 어른이 된 거야."'], frag: 'ch4_capsule', fragText: '놀이터에 묻은 타임캡슐. 구슬 세 개, 그리고 "이걸 찾았으면 너는 어른이 된 거야."' } },
+    { type: 'top', x: -1.5, z: -10, scale: 2.2, act: { kind: 'toy', lines: ['팽이를 돌렸다. 팽이가 멈추지 않는다.', '팽이가 도는 동안은 해도 움직이지 않는 것 같다.'] } },
+    { type: 'mirror', x: -12, z: -24, rot: .5, w: 1.1, h: 2, reflection: { h: .8 }, act: { kind: 'mirror', lines: ['볼록 거울 속의 나는 아이만큼 작다.', '거울 속 아이가 미끄럼틀 쪽을 손가락으로 가리킨다.'], mood: [1, 1] } },
+    { type: 'wallswitch', x: -2, y: 1.2, z: -29.94, act: { kind: 'toggle', label: '스위치', flag: 'dark', dark: true, lines: ['가로등 스위치를 누르자 해가 툭 꺼졌다. 놀이터에 밤이 왔다. 어둠 속에 분필 글씨가 빛난다.'], offLines: ['다시 해가 떴다. 해는 아까와 같은 자리에 있다.'], mood: [0, 2] } },
+    { type: 'walltext', x: 0, y: .03, z: -45, w: 7, flat: true, write: '다 놀았으면 집에 가야지', ink: '#fff0c8', showIf: 'dark' },
+    { type: 'walltext', x: 10, y: .03, z: -18, w: 4, flat: true, write: '같이 놀자', ink: '#fff0c8', showIf: 'dark' },
+    { type: 'frag', x: -25, y: 1.1, z: -42.5, act: { kind: 'frag', frag: 'ch4_marble', fragText: '친구와 바꾼 구슬 하나. 그 친구의 이름은 기억나지 않는데, 구슬의 색은 또렷하다.' } },
+    { type: 'walltext', x: -6, y: .45, z: -61.8, w: 2, write: '여기 넘으면 혼나', ink: '#8a6070', appear: true },
+    // HIDDEN ROOM (hopscotch): the stationery shop in front of school
+    { type: 'room', x: 300, z: 0, w: 9, d: 8, height: 3, floor: 'tiles', wallTex: 'wallpaper', wallColor: '#fff0e0' },
+    { type: 'shelf', x: 297, z: -3.7 }, { type: 'shelf', x: 300, z: -3.7 }, { type: 'shelf', x: 303, z: -3.7 }, { type: 'top', x: 299, z: -1, scale: 1.5 }, { type: 'balloon', x: 302.5, z: 1 },
+    { type: 'orb', x: 300, z: -1.5, y: 1.2, color: '#ffe8c0', r: 1, room: 'ch4_hopscotch', text: '기억의 조각 · 학교 앞 문방구. 백 원짜리 뽑기를 하던 곳. 꽝이 나와도 내일 또 오면 됐다.' },
+    { type: 'door', x: 300, z: 3.88, rot: PI, glow: '#ffe8d0', r: 1, warp: { x: -3, z: 6, yaw: 0 }, text: '놀이터로.' },
   ],
+  puzzles: [{ id: 'hop', mode: 'order', keys: ['4', '3', '2', '1'], wrong: '발이 금을 밟았다. 처음부터 다시.', progress: ['넷.', '셋.', '둘.'],
+    reward: { text: '하나. 마지막 칸을 밟자 모래 아래에서 가게 문이 열리는 종소리가 났다…', room: 'ch4_hopscotch', warp: { x: 300, z: 2.5, yaw: 0 }, warpDelay: 2800 } }],
   mutations: [
     { when: { dayMod: [2, 0] }, add: [{ type: 'sheep', x: 6, z: -12, wander: 4, speed: .3, r: 1.2, text: '양이 그네를 기다린다.', mood: [1, 1] }] },
     { when: { dayMin: 5 }, add: [{ type: 'watcher', x: 0, z: -66, h: 3.2, watch: .08 }], text: '문 옆에 누군가 서 있다. 아까는 없었다.' },

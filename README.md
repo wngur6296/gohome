@@ -28,7 +28,8 @@ three.js(r160, `vendor/`에 포함) 기반 모바일 웹 게임. 아이폰 Safar
 - 화면 오른쪽 드래그: 둘러보기
 - 오른쪽 아래 ⤒ 버튼: 점프 (길게 누르면 조금 더 높이, PC는 Space). 떨어져도 부드럽게 페이드된 뒤 마지막 안전한 자리에서 다시 시작
 - 물체·문·존재에 다가가면 저절로 "닿습니다" — 어떤 것은 다른 꿈으로 이어집니다(링크).
-- ☾ 버튼: 일시정지 / 깨어나기 / 꿈 일기
+- 만질 수 있는 물건 앞에 서면 화면 가운데 작은 점과 함께 ✋ 버튼이 나타납니다 (서랍 열기, 전화 받기, 라디오 켜기, 줍기 등). PC는 E 키
+- ☾ 버튼: 일시정지 / 기록하기 / 기억 일지 / 깨어나기 / 꿈 일기
 - PC: WASD + 마우스 드래그, Shift 달리기
 
 ## 챕터 (8장 + 숨겨진 장면)
@@ -50,7 +51,7 @@ three.js(r160, `vendor/`에 포함) 기반 모바일 웹 게임. 아이폰 Safar
 - 텍스처 교체: 0.3↑ 벽지에 점 무늬, 0.55↑ 작은 얼굴 벽지·눈 달린 별
 - 자동 배치(`js/strange.js`): 아무 데도 안 가는 문, 천천히 돌아보는 형체(watcher), 하늘의 얼굴, 뒤집힌 가구, 거대한 물건
 - 소리: BGM 느려짐/디튠 + 느리게 역재생되는 저역 레이어, 발소리·차임 피치 하강 (갑작스러운 큰 소리 없음)
-- 글자: 자막·챕터 제목 한글 글리치, 조용하고 기묘한 속삭임 메시지
+- 글자: 챕터 제목이 아주 잠깐 일그러짐(자막은 오타처럼 보이지 않도록 글자를 바꾸지 않고 은은한 색 번짐만), 조용하고 기묘한 속삭임 메시지
 - 조절: `strange: { spots:[[x,z]], watchers, nowhere, skyfaces, flipped, giants, whispers:[...], auto:false }`
 
 ## 숨겨진 방 · 트리거 (데이터 기반)
@@ -62,6 +63,18 @@ three.js(r160, `vendor/`에 포함) 기반 모바일 웹 게임. 아이폰 Safar
 - `room: 'id'` = 숨겨진 방 발견 기록 (메뉴 ◇ 카운터, 총합은 챕터 데이터에서 자동 계산)
 - `loop: {times, dz | warp, texts}` = 불가능한 건축: N번 조용히 되돌려 보낸 뒤에야 통과
 - 날짜 조건은 `mutations` 사용
+
+## 만질 수 있는 것들 (v7, 데이터 기반)
+오브젝트에 `act: { kind, label, … }`를 붙이면 ✋ 버튼으로 쓰는 물건이 됩니다 (`js/interact.js`).
+- `kind`: `open`(서랍·사물함·가방·양탄자, 열리는 애니메이션) · `lines`/`mirror`/`sit`(누를 때마다 다음 대사) · `play`(라디오·TV·방송, 대사가 차례로 흐름) · `ring`(가까이 가면 조용히 울리는 전화, 받으면 속삭임 자막) · `toy`(노래하는 장난감) · `pickup`(줍기 → 소지품) · `use`(`need:'아이템'`이 있어야 반응) · `toggle`(스위치, `dark:true`면 불이 꺼지고 `showIf`가 붙은 야광 글씨가 나타남) · `frag`(기억의 조각) · `step`(퍼즐 한 칸)
+- 효과(모든 kind 공통 + `after:{n, …}` + 퍼즐 `reward`): `text, lines, mood, secret, room, frag/fragText, give, flag, dark, warp, ending, hideSelf, snuff`
+- 퍼즐: 챕터의 `puzzles: [{ id, mode:'order'|'all', keys:[…], reward:{…}, wrong, progress }]`
+- 분위기 행동: `unseen:[[x,z,rot]]`(안 보는 사이 자리를 옮김), `follow:{min,speed,leash}`(보고 있지 않을 때만 천천히 따라옴, 일정 거리 이상은 다가오지 않음), `appear:true`(보고 있지 않던 사이에 생겨나는 글씨), `breathe`, `showIf/hideIf`(장면 플래그), `loopAlts`(반복될 때마다 가구 배치가 바뀜)
+- 새 모델: `dresser, locker, wardrobe, radio, speaker, rotary, wallswitch, mirror(어린 나를 비춤), teddy, doll, robot, child, walltext, frag, key, bottle, toypiano, cake, desklamp, lamp2, backpack, umbrella, tub, crib, bell, vending, gate, rug, sandpile, top, photo, shelf, balloon, cup, shoes` (`js/propmodels.js`)
+
+## 기억 일지 · 엔딩
+- 메뉴/일시정지의 "기억 일지": 챕터별 기억의 조각과 숨겨진 방의 기억, 지금 가진 물건. 개수는 챕터 데이터에서 자동 계산
+- 엔딩 7종(`js/endings.js`, 장면은 240×160 픽셀 그림을 코드로 그림). 메뉴 "엔딩 목록"에서 본 엔딩을 다시 보고, 못 본 엔딩은 힌트를 볼 수 있음. 본 엔딩은 기록을 불러와도 지워지지 않음
 
 ## 점프 · 플랫폼 (데이터 기반)
 - 물리: 중력, 코요테 타임 0.16초, 점프 입력 버퍼 0.16초, 길게 누르면 더 높이, 천천히 떨어지는 몽환적 낙하, 착지음 (`js/state.js`의 `PHYS`)
@@ -103,7 +116,10 @@ js/
   models.js    로우폴리 절차적 모델(문, 침대, 우체통, 해파리, 고래, 양 …)
   textures.js  절차적 저해상도 텍스처
   audio.js     WebAudio (첫 탭에서 잠금 해제, 크로스페이드 BGM, 효과음)
-  save.js      localStorage 저장 (꿈 일수, 해금, 방문 수, 비밀, 기분 그래프, 설정)
+  save.js      localStorage 저장 (꿈 일수, 해금, 방문 수, 비밀, 기억의 조각, 소지품, 엔딩, 기분 그래프, 설정)
+  interact.js  ✋ 상호작용 엔진 (서랍·전화·라디오·퍼즐·소지품)
+  propmodels.js 상호작용 소품 모델 · 벽 글씨 텍스처
+  endings.js   엔딩 데이터 + 픽셀 엔딩 장면
   main.js      게임 흐름, 링크/전환, 변이(mutation), 기분 그래프, UI
 chapters/      ch1~ch8, secret 챕터 데이터 + manifest.js
 js/strange.js  기괴함 레이어 / 한글 글리치 / 속삭임
@@ -121,7 +137,7 @@ tools/         (공개 저장소에는 미포함) make_audio.py(음악 합성), 
 2. `chapters/manifest.js`에 import 한 줄 + 배열에 추가.
 3. 이미지/음악이 새로 필요하면 `assets/`에 넣고 `js/assets.js`의 목록에 이름 추가 (`tools/make_audio.py`에 `ambient('ch9', ...)` 추가 가능).
 4. `node tools/build_single.mjs`로 단일 HTML 재빌드, `sw.js`의 VERSION/FILES 갱신.
-새 모델 타입이 필요하면 `js/models.js`의 `M` 객체에 함수 하나만 추가하면 됩니다.
+새 모델 타입이 필요하면 `js/models.js`의 `M` 객체(또는 `js/propmodels.js`의 `PM`)에 함수 하나만 추가하면 됩니다. 새 챕터의 기억의 조각·숨겨진 방·비밀은 일지와 카운터에 자동으로 더해집니다.
 
 ## 멀티플레이 확장 지점
 - **상태/렌더 분리**: `GameState`가 `players: Map<id, Player>`를 갖고, 렌더러는 상태를 읽기만 함. 원격 플레이어는 `Renderer.syncAvatars()`가 이미 `ghostfriend` 아바타로 그림.

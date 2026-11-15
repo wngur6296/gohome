@@ -67,7 +67,7 @@ export class Renderer {
     this.r = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
     this.r.outputColorSpace = THREE.SRGBColorSpace;
     this.scene = new THREE.Scene(); this.camera = new THREE.PerspectiveCamera(70, 1, 0.08, 400);
-    this.rt = new THREE.WebGLRenderTarget(4, 4, { magFilter: THREE.NearestFilter, minFilter: THREE.LinearFilter });
+    this.rt = new THREE.WebGLRenderTarget(4, 4, { magFilter: THREE.NearestFilter, minFilter: THREE.LinearFilter, stencilBuffer: true }); this.camFwd = new THREE.Vector3(0, 0, -1); this.flagged = []; this.loopers = []; this.lights = [];
     this.postU = { tDiffuse: { value: this.rt.texture }, uRes: { value: new THREE.Vector2(1, 1) }, uTime: psx.time, uFade: { value: 1 }, uFadeColor: { value: new THREE.Color('#fff4fb') },
       uHue: { value: 0 }, uSat: { value: 1 }, uGrain: { value: 0.05 }, uAber: { value: 0.004 }, uBloom: { value: 1 }, uDither: { value: 1 }, uWobble: { value: 1 }, uStrange: { value: 0 } };
     this.post = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({ vertexShader: POST_VS, fragmentShader: POST_FS, uniforms: this.postU, depthTest: false }));
@@ -84,7 +84,7 @@ export class Renderer {
     this.rt.setSize(rw, rh); this.postU.uRes.value.set(rw, rh); psx.snap.value.set(rw / 2, rh / 2);
     this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
   }
-  clear(){ this.world.traverse(o => { if (o.geometry) o.geometry.dispose(); }); this.scene.remove(this.world); this.world = new THREE.Group(); this.scene.add(this.world); this.anim = []; this.views.clear(); }
+  clear(){ this.flagged = []; this.loopers = []; this.lights = []; this.dark = false; this.world.traverse(o => { if (o.geometry) o.geometry.dispose(); }); this.scene.remove(this.world); this.world = new THREE.Group(); this.scene.add(this.world); this.anim = []; this.views.clear(); }
 
   /** Build visuals for a chapter. Returns colliders + interactables to the game. */
   build(ch, rng, extra){
@@ -98,13 +98,14 @@ export class Renderer {
     const U = this.postU; U.uWobble.value = (1 + st * 5) * lerp('wobble'); U.uAber.value = (.004 + st * .01) * lerp('aber'); U.uStrange.value = st; U.uGrain.value = .05 * lerp('grain'); U.uBloom.value = lerp('bloom');
     if (md){ const pp = md.palette || {}; P = { ...P, fogFar: (P.fogFar ?? 45) * (1 + ((pp.fogFarMul ?? 1) - 1) * ml) }; }
     this.scene.fog = new THREE.Fog(P.fog, P.fogNear ?? 6, P.fogFar ?? 45); this.r.setClearColor(P.fog);
-    this.world.add(new THREE.HemisphereLight(P.skyTop, P.ground || P.fog, P.hemi ?? 1.1)); this.world.add(new THREE.AmbientLight(P.ambient || '#fff2f6', P.ambientI ?? 1.4));
-    const sun = new THREE.DirectionalLight(P.sun || '#fff4e0', P.sunI ?? 0.9); sun.position.set(3, 10, 4); this.world.add(sun);
+    const hl = new THREE.HemisphereLight(P.skyTop, P.ground || P.fog, P.hemi ?? 1.1), al = new THREE.AmbientLight(P.ambient || '#fff2f6', P.ambientI ?? 1.4); this.world.add(hl); this.world.add(al);
+    const sun = new THREE.DirectionalLight(P.sun || '#fff4e0', P.sunI ?? 0.9); sun.position.set(3, 10, 4); this.world.add(sun); this.lights.push(hl, al, sun); this.baseFog = new THREE.Color(P.fog);
     this.world.add(this.sky(P));
     this.postU.uHue.value = (P.hue || 0) + (extra.hueDrift || 0) + (md?.palette?.hueAdd || 0) * ml; this.postU.uSat.value = (P.sat ?? 1) * (1 + ((md?.palette?.satMul ?? 1) - 1) * ml);
     const colliders = [], things = []; this.grounds = []; this.ceilings = [];
     const objs = [...ch.objects, ...extra.objects];
     for (const o of objs) this.add(o, colliders, things, rng);
+    this.lights.forEach(l => l.userData.base = l.intensity); this.applyFlags({});
     return { colliders, things, grounds: this.grounds, ceilings: this.ceilings };
   }
   sky(P){
@@ -151,7 +152,7 @@ export class Renderer {
         for (let i = 0; i < n; i++){ const s = (o.s || 1) * (0.55 + rng() * 0.5); const p = new THREE.Mesh(new THREE.IcosahedronGeometry(s, 1), cm); p.position.set((i - n / 2) * (o.s || 1) * .6, rng() * .4 * (o.s || 1), (rng() - .5) * (o.s || 1) * .6); grp.add(p); }
         grp.position.set(o.x, o.y, o.z); W.add(grp); const ph = rng() * 6, sp = o.drift ?? .3; this.anim.push(t => { grp.position.y = o.y + Math.sin(t * .4 + ph) * .25; grp.position.x = o.x + Math.sin(t * .05 * sp + ph) * 2 * sp; }); mesh = grp; break; }
       case 'lamp': { const m = new THREE.Mesh(new THREE.BoxGeometry(o.w || 1.4, .08, o.d || .3), mat({ color: o.color || '#fffbe8', emissive: o.color || '#fff6d8', fog: true })); m.position.set(o.x, o.y, o.z); if (o.rot) m.rotation.y = o.rot; W.add(m);
-        if (o.light){ const l = new THREE.PointLight(o.color || '#fff6f0', (o.intensity || 6) * .6, o.range || 10, 1.2); l.position.set(o.x, o.y - .3, o.z); W.add(l); }
+        if (o.light){ const l = new THREE.PointLight(o.color || '#fff6f0', (o.intensity || 6) * .6, o.range || 10, 1.2); l.position.set(o.x, o.y - .3, o.z); W.add(l); this.lights.push(l); }
         if (o.flicker){ const ph = rng() * 9; this.anim.push(t => { m.visible = Math.sin(t * 1.7 + ph) + Math.sin(t * 7.3 + ph * 2) > -1.6; }); } break; }
       default: { mesh = buildModel(o, rng, this.anim); if (!mesh) break; mesh.position.set(o.x || 0, o.y || 0, o.z || 0); if (o.rot) mesh.rotation.y = o.rot; if (o.scale) mesh.scale.setScalar(o.scale); W.add(mesh);
         if (o.reflect){ const rf = mesh.clone(); rf.scale.y *= -1; rf.position.y = (o.reflectY || 0) * 2 - mesh.position.y; rf.traverse(c => { if (c.material){ c.material = c.material.clone(); c.material.transparent = true; c.material.opacity = .35; c.material.side = THREE.DoubleSide; } }); W.add(rf); mesh.userData.reflection = rf; }
@@ -159,9 +160,41 @@ export class Renderer {
         if (o.watch){ const m = mesh, cam = this.camera, spd = o.watch === true ? .25 : o.watch; this.anim.push((t, dt = .016) => { const want = Math.atan2(cam.position.x - m.position.x, cam.position.z - m.position.z); let dd = want - m.rotation.y; dd = Math.atan2(Math.sin(dd), Math.cos(dd)); m.rotation.y += dd * Math.min(1, dt * spd); }); }
         if (o.flip){ mesh.rotation.z = Math.PI; mesh.position.y = o.y ?? 3; } }
     }
-    if (o.link || o.goal || o.secret || o.text || o.touch || o.room || o.warp || o.loop || o.gaze){ things.push({ ...o, mesh, r: o.r || 1.3, id: o.id || `${o.type}@${o.x},${o.z}` }); }
+    if (mesh) this.behave(o, mesh);
+    if (o.link || o.goal || o.secret || o.text || o.touch || o.room || o.warp || o.loop || o.gaze || o.act){ things.push({ ...o, mesh, r: o.r || 1.3, id: o.id || `${o.type}@${o.x},${o.z}` }); }
     if (mesh && o.id) this.views.set(o.id, mesh);
   }
+  /** Is a world point inside the camera's view cone? (cos of half-angle) */
+  seen(p, cosA = .6){ const c = this.camera.position, dx = p.x - c.x, dy = (p.y || 0) + 1 - c.y, dz = p.z - c.z, L = Math.hypot(dx, dy, dz) || 1; return (dx * this.camFwd.x + dy * this.camFwd.y + dz * this.camFwd.z) / L > cosA; }
+  /** v7 ambient behaviours: unseen (moves when not looked at), follow (drifts after you only while unseen), appear (writing that wasn't there),
+   *  breathe, showIf/hideIf (scene flags), loopAlts (rearranges on each loop), mirror (shows your child self). */
+  behave(o, mesh){
+    const A = this.anim, cam = this.camera;
+    if (o.unseen){ const spots = [[o.x, o.z, o.rot || 0], ...o.unseen]; let i = 0, last = 0, base = o.y || 0;
+      A.push(t => { if (t - last < (o.unseenEvery || 4) || this.seen(mesh.position, .3)) return; if (Math.hypot(cam.position.x - mesh.position.x, cam.position.z - mesh.position.z) < 3) return;
+        last = t; i = (i + 1) % spots.length; const s2 = spots[i]; const nx = s2[0], nz = s2[1]; if (Math.hypot(cam.position.x - nx, cam.position.z - nz) < 3 || this.seen({ x: nx, y: base, z: nz }, .3)) { i = (i + spots.length - 1) % spots.length; return; }
+        mesh.position.set(nx, s2[3] ?? base, nz); if (s2[2] != null) mesh.rotation.y = s2[2]; }); }
+    if (o.follow){ const f = o.follow === true ? {} : o.follow, hx = o.x, hz = o.z;
+      A.push((t, dt = .016) => { const m = mesh.position, dx = cam.position.x - m.x, dz = cam.position.z - m.z, d = Math.hypot(dx, dz);
+        if (d < (f.range || 16) && d > (f.min || 4.5) && !this.seen(m, .45)){ const sp = (f.speed || .55) * dt, nx = m.x + dx / d * sp, nz = m.z + dz / d * sp; if (Math.hypot(nx - hx, nz - hz) < (f.leash || 10)){ m.x = nx; m.z = nz; } }
+        let dd = Math.atan2(dx, dz) - mesh.rotation.y; dd = Math.atan2(Math.sin(dd), Math.cos(dd)); mesh.rotation.y += dd * Math.min(1, dt * 1.5); }); }
+    if (o.appear){ mesh.visible = false; let looked = false, away = 0;
+      A.push((t, dt = .016) => { if (mesh.visible) return; const near = Math.hypot(cam.position.x - mesh.position.x, cam.position.z - mesh.position.z) < (o.appearDist || 12);
+        if (!near) return; if (this.seen(mesh.position, .5)){ looked = true; away = 0; } else if (looked && (away += dt) > 1.5) mesh.visible = true; }); }
+    if (o.breathe){ const b = mesh.scale.x, ph = Math.random() * 6; A.push(t => mesh.scale.setScalar(b * (1 + Math.sin(t * .9 + ph) * o.breathe))); }
+    if (o.showIf || o.hideIf) this.flagged.push({ mesh, showIf: o.showIf, hideIf: o.hideIf });
+    if (o.loopAlts) this.loopers.push({ mesh, alts: [[o.x, o.z, o.rot || 0], ...o.loopAlts], i: 0, y: o.y || 0 });
+    if (o.type === 'mirror'){ const w = o.w || .9, h = o.h || 1.6;
+      const glass = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: o.glass || '#dfe8f2', transparent: true, opacity: .62, depthWrite: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp }));
+      glass.position.set(0, h / 2, .035); glass.renderOrder = 5; mesh.add(glass);
+      const fig = buildModel({ type: 'child', h: 1.05, ...(o.reflection || {}) }, Math.random, A); fig.traverse(c => { if (c.material){ c.material = c.material.clone(); Object.assign(c.material, { depthTest: false, depthWrite: false, transparent: true, opacity: .9, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.EqualStencilFunc, stencilZPass: THREE.KeepStencilOp }); c.renderOrder = 6; } });
+      this.world.add(fig); const nx = Math.sin(o.rot || 0), nz = Math.cos(o.rot || 0);
+      A.push(() => { const c = cam.position, s = (c.x - o.x) * nx + (c.z - o.z) * nz; fig.visible = s > .05 && s < 9; if (!fig.visible) return; const rx = c.x - 2 * s * nx, rz = c.z - 2 * s * nz;
+        fig.position.set(rx, c.y - 1.6, rz); fig.rotation.y = Math.atan2(c.x - rx, c.z - rz); }); }
+  }
+  applyFlags(flags){ for (const f of this.flagged) f.mesh.visible = (!f.showIf || !!flags[f.showIf]) && (!f.hideIf || !flags[f.hideIf]); }
+  setDark(on){ this.dark = on; for (const l of this.lights) l.intensity = (l.userData.base ?? l.intensity) * (on ? .22 : 1); if (this.scene.fog && this.baseFog){ const c = this.baseFog.clone(); if (on) c.multiplyScalar(.3); this.scene.fog.color.copy(c); this.r.setClearColor(c); } if (this.skyMesh) this.skyMesh.visible = !on; }
+  onLoop(){ for (const L of this.loopers){ L.i = (L.i + 1) % L.alts.length; const a = L.alts[L.i]; L.mesh.position.set(a[0], a[3] ?? L.y, a[1]); L.mesh.rotation.y = a[2] || 0; } }
   corridor(o, col){ // straight hallway along +x or +z with walls, ceiling, lamps, optional pillars
     const len = o.len, wd = o.width || 3, h = o.height || 3, alongX = o.dir === 'x';
     const cx = o.x + (alongX ? len / 2 : 0), cz = o.z + (alongX ? 0 : len / 2);
@@ -193,7 +226,7 @@ export class Renderer {
   /** Sync remote/other player avatars (future multiplayer) */
   syncAvatars(state){ for (const p of state.players.values()){ if (p.isLocal) continue; let v = this.views.get(p.id); if (!v){ v = buildModel({ type: 'ghostfriend' }, Math.random, this.anim); this.world.add(v); this.views.set(p.id, v); } v.position.set(p.pos.x, 0, p.pos.z); v.rotation.y = p.yaw; } }
   frame(state, t, dt){
-    psx.time.value = t; for (const f of this.anim) f(t, dt);
+    psx.time.value = t; this.camera.getWorldDirection(this.camFwd); for (const f of this.anim) f(t, dt);
     const p = state.localPlayer; if (p){ const bob = p.grounded === false ? 0 : Math.sin(t * 7) * Math.min(p.moving || 0, 3) * .012;
       this.camera.position.set(p.pos.x, p.pos.y + p.height + bob, p.pos.z); this.camera.rotation.set(p.pitch, p.yaw, Math.sin(t * .35) * .01, 'YXZ'); }
     if (this.skyMesh) this.skyMesh.position.copy(this.camera.position);

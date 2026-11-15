@@ -14,4 +14,4 @@ export class LocalAdapter extends NetAdapter {
   onMessage(fn){ this.fns.push(fn); }
 }
 // Messages that should be replicated when a real adapter is plugged in.
-export const REPLICATED = ['player:state', 'player:join', 'player:leave', 'scene:link', 'object:touch', 'secret:found'];
+export const REPLICATED = ['player:state', 'player:join', 'player:leave', 'scene:link', 'object:touch', 'object:act', 'secret:found'];
